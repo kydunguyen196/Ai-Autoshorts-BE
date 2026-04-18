@@ -1,0 +1,8 @@
+ALTER TABLE video_jobs
+    ADD COLUMN IF NOT EXISTS current_step VARCHAR(64);
+
+ALTER TABLE video_jobs
+    ADD COLUMN IF NOT EXISTS step_error_details TEXT;
+
+ALTER TABLE video_jobs
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;

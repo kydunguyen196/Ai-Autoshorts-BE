@@ -1,0 +1,18 @@
+{
+  "defaultStyle": "motivation",
+  "defaultDurationSeconds": 30,
+  "defaultVariantCount": 3,
+  "items": [
+    {
+      "topic": "How creators build momentum when views drop",
+      "contentStyle": "self-improvement",
+      "variantCount": 4
+    },
+    {
+      "topic": "A short story about discipline under pressure",
+      "contentStyle": "storytelling",
+      "durationSeconds": 36,
+      "variantCount": 3
+    }
+  ]
+}

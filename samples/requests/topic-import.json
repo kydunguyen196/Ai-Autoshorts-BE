@@ -1,0 +1,22 @@
+{
+  "defaultSource": "imported-csv",
+  "topics": [
+    {
+      "topic": "3 hard truths about wasting your twenties",
+      "contentStyle": "motivation",
+      "priority": 100,
+      "tags": ["life", "mindset"]
+    },
+    {
+      "topic": "A quick story about patience and compounding",
+      "contentStyle": "storytelling",
+      "priority": 70,
+      "scheduledFor": "2026-04-15T06:30:00Z"
+    },
+    {
+      "topic": "7 facts about attention span and social media",
+      "contentStyle": "facts",
+      "priority": 90
+    }
+  ]
+}

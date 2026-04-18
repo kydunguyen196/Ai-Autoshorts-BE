@@ -1,0 +1,19 @@
+{
+  "defaultStyle": "motivation",
+  "defaultDurationSeconds": 30,
+  "items": [
+    {
+      "topic": "3 habits that make people quietly successful",
+      "contentStyle": "self-improvement"
+    },
+    {
+      "topic": "What most people misunderstand about discipline",
+      "contentStyle": "motivation",
+      "durationSeconds": 35
+    },
+    {
+      "topic": "A short story about delayed gratification",
+      "contentStyle": "storytelling"
+    }
+  ]
+}

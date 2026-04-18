@@ -1,0 +1,145 @@
+package com.autoshorts.ai.util;
+
+import com.autoshorts.ai.dto.VideoJobResponse;
+import com.autoshorts.ai.entity.AudioGenerationMode;
+import com.autoshorts.ai.entity.ContentGenerationMode;
+import com.autoshorts.ai.entity.GenerationStep;
+import com.autoshorts.ai.entity.JobStatus;
+import com.autoshorts.ai.entity.PublishStatus;
+import com.autoshorts.ai.entity.VideoJob;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class VideoJobMapperTest {
+
+    @Test
+    void shouldMapVideoJobFieldsForFrontendAndLifecycleViews() {
+        UUID jobId = UUID.randomUUID();
+        UUID channelId = UUID.randomUUID();
+        UUID templateId = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        VideoJob job = new VideoJob();
+        job.setId(jobId);
+        job.setChannelId(channelId);
+        job.setStatus(JobStatus.PROCESSING);
+        job.setTopic("How habits shape confidence");
+        job.setStyle("self-improvement");
+        job.setVoiceId("voice_abc");
+        job.setDurationSeconds(45);
+        job.setScriptText("Script body");
+        job.setHookText("Hook");
+        job.setCtaText("Follow for more");
+        job.setCaptionText("Caption");
+        job.setHashtags("#one,#two");
+        job.setSceneBreakdownJson("{\"scenes\":2}");
+        job.setResolvedStyle("self-improvement");
+        job.setPromptTemplateId(templateId);
+        job.setContentGenerationMode(ContentGenerationMode.REAL);
+        job.setContentVariantKey("self-improvement|hook=problem-hook|cta=save-cta|structure=problem-solution-insight");
+        job.setHookStrategy("problem-hook");
+        job.setCtaStrategy("save-cta");
+        job.setStructureStrategy("problem-solution-insight");
+        job.setHookStrengthScore(86);
+        job.setEngagementScore(83);
+        job.setEngagementTagsJson("{\"hookStrength\":\"high\",\"engagementPotential\":\"high\"}");
+        job.setGenerationBatchId(UUID.randomUUID());
+        job.setGenerationGroupId(UUID.randomUUID());
+        job.setVariantIndex(2);
+        job.setVariantCount(5);
+        job.setRankingScore(84);
+        job.setTopCandidate(true);
+        job.setTopCandidateRank(1);
+        job.setPublishStatus(PublishStatus.READY_TO_PUBLISH);
+        job.setScheduledPublishAt(now.plusSeconds(3600));
+        job.setPublishPlatform("tiktok");
+        job.setPublishReadyAt(now.plusSeconds(120));
+        job.setPublishRequestedAt(now.plusSeconds(180));
+        job.setPublishStartedAt(now.plusSeconds(181));
+        job.setPublishedAt(now.plusSeconds(300));
+        job.setPublishAttemptCount(3);
+        job.setPublishProvider("mock");
+        job.setPublishExternalId("mock-123");
+        job.setPublishFailureReason("none");
+        job.setPublishFailureDetails("details");
+        job.setPublishLastErrorAt(now.plusSeconds(200));
+        job.setAudioUrl("audio-url");
+        job.setAudioGenerationMode(AudioGenerationMode.MOCK);
+        job.setAudioProvider("mock_elevenlabs");
+        job.setSubtitleUrl("subtitle-url");
+        job.setFinalVideoUrl("video-url");
+        job.setErrorMessage("error");
+        job.setCurrentStep(GenerationStep.AUDIO_SYNTHESIS);
+        job.setStepErrorDetails("details");
+        job.setAttemptCount(2);
+        job.setStartedAt(now);
+        job.setCompletedAt(now);
+        job.setLastErrorAt(now);
+        job.setCreatedAt(now);
+        job.setUpdatedAt(now);
+
+        VideoJobResponse response = VideoJobMapper.toResponse(job);
+
+        assertThat(response.getJobId()).isEqualTo(jobId);
+        assertThat(response.getChannelId()).isEqualTo(channelId);
+        assertThat(response.getStatus()).isEqualTo(JobStatus.PROCESSING);
+        assertThat(response.getTopic()).isEqualTo("How habits shape confidence");
+        assertThat(response.getStyle()).isEqualTo("self-improvement");
+        assertThat(response.getVoiceId()).isEqualTo("voice_abc");
+        assertThat(response.getDurationSeconds()).isEqualTo(45);
+        assertThat(response.getScriptText()).isEqualTo("Script body");
+        assertThat(response.getHookText()).isEqualTo("Hook");
+        assertThat(response.getCtaText()).isEqualTo("Follow for more");
+        assertThat(response.getCaptionText()).isEqualTo("Caption");
+        assertThat(response.getHashtags()).containsExactly("#one", "#two");
+        assertThat(response.getSceneBreakdownJson()).isEqualTo("{\"scenes\":2}");
+        assertThat(response.getResolvedStyle()).isEqualTo("self-improvement");
+        assertThat(response.getPromptTemplateId()).isEqualTo(templateId);
+        assertThat(response.getContentGenerationMode()).isEqualTo(ContentGenerationMode.REAL);
+        assertThat(response.getContentVariantKey()).isEqualTo("self-improvement|hook=problem-hook|cta=save-cta|structure=problem-solution-insight");
+        assertThat(response.getHookStrategy()).isEqualTo("problem-hook");
+        assertThat(response.getCtaStrategy()).isEqualTo("save-cta");
+        assertThat(response.getStructureStrategy()).isEqualTo("problem-solution-insight");
+        assertThat(response.getHookStrengthScore()).isEqualTo(86);
+        assertThat(response.getEngagementScore()).isEqualTo(83);
+        assertThat(response.getEngagementTagsJson()).isEqualTo("{\"hookStrength\":\"high\",\"engagementPotential\":\"high\"}");
+        assertThat(response.getGenerationBatchId()).isEqualTo(job.getGenerationBatchId());
+        assertThat(response.getGenerationGroupId()).isEqualTo(job.getGenerationGroupId());
+        assertThat(response.getVariantIndex()).isEqualTo(2);
+        assertThat(response.getVariantCount()).isEqualTo(5);
+        assertThat(response.getRankingScore()).isEqualTo(84);
+        assertThat(response.getIsTopCandidate()).isTrue();
+        assertThat(response.getTopCandidateRank()).isEqualTo(1);
+        assertThat(response.getPublishStatus()).isEqualTo(PublishStatus.READY_TO_PUBLISH);
+        assertThat(response.getScheduledPublishAt()).isEqualTo(now.plusSeconds(3600));
+        assertThat(response.getPublishPlatform()).isEqualTo("tiktok");
+        assertThat(response.getPublishReadyAt()).isEqualTo(now.plusSeconds(120));
+        assertThat(response.getPublishRequestedAt()).isEqualTo(now.plusSeconds(180));
+        assertThat(response.getPublishStartedAt()).isEqualTo(now.plusSeconds(181));
+        assertThat(response.getPublishedAt()).isEqualTo(now.plusSeconds(300));
+        assertThat(response.getPublishAttemptCount()).isEqualTo(3);
+        assertThat(response.getPublishProvider()).isEqualTo("mock");
+        assertThat(response.getPublishExternalId()).isEqualTo("mock-123");
+        assertThat(response.getPublishFailureReason()).isEqualTo("none");
+        assertThat(response.getPublishFailureDetails()).isEqualTo("details");
+        assertThat(response.getPublishLastErrorAt()).isEqualTo(now.plusSeconds(200));
+        assertThat(response.getAudioUrl()).isEqualTo("audio-url");
+        assertThat(response.getAudioGenerationMode()).isEqualTo(AudioGenerationMode.MOCK);
+        assertThat(response.getAudioProvider()).isEqualTo("mock_elevenlabs");
+        assertThat(response.getSubtitleUrl()).isEqualTo("subtitle-url");
+        assertThat(response.getFinalVideoUrl()).isEqualTo("video-url");
+        assertThat(response.getErrorMessage()).isEqualTo("error");
+        assertThat(response.getCurrentStep()).isEqualTo(GenerationStep.AUDIO_SYNTHESIS);
+        assertThat(response.getStepErrorDetails()).isEqualTo("details");
+        assertThat(response.getAttemptCount()).isEqualTo(2);
+        assertThat(response.getStartedAt()).isEqualTo(now);
+        assertThat(response.getCompletedAt()).isEqualTo(now);
+        assertThat(response.getLastErrorAt()).isEqualTo(now);
+        assertThat(response.getCreatedAt()).isEqualTo(now);
+        assertThat(response.getUpdatedAt()).isEqualTo(now);
+    }
+}

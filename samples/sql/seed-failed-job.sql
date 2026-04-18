@@ -1,0 +1,33 @@
+INSERT INTO video_jobs (
+    id,
+    user_id,
+    channel_id,
+    topic,
+    style,
+    voice_id,
+    duration_seconds,
+    status,
+    error_message,
+    current_step,
+    step_error_details,
+    version,
+    attempt_count,
+    created_at,
+    updated_at
+) VALUES (
+    '11111111-1111-1111-1111-111111111111',
+    '00000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000010',
+    'seeded failed job for retry endpoint testing',
+    'motivation',
+    NULL,
+    30,
+    'FAILED',
+    'Seeded failure',
+    'VIDEO_COMPOSITION',
+    'This is a sample seeded failure detail.',
+    0,
+    1,
+    NOW(),
+    NOW()
+);
