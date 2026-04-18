@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:autoshorts}
+    username: ${POSTGRES_USER:autoshorts}
+    password: ${POSTGRES_PASSWORD:autoshorts}
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+app:
+  working-dir: /app/work
+  assets:
+    default-background-path: /app/assets/backgrounds/default.mp4
+  scheduler:
+    enabled: ${APP_SCHEDULER_ENABLED:false}
+  storage:
+    endpoint: http://minio:9000

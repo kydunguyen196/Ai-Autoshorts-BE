@@ -1,0 +1,343 @@
+{
+  "groups": [
+    {
+      "name": "app",
+      "type": "com.autoshorts.ai.config.AppProperties",
+      "sourceType": "com.autoshorts.ai.config.AppProperties"
+    },
+    {
+      "name": "app.assets",
+      "type": "com.autoshorts.ai.config.AppProperties$Assets",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Assets getAssets() "
+    },
+    {
+      "name": "app.cleanup",
+      "type": "com.autoshorts.ai.config.AppProperties$Cleanup",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Cleanup getCleanup() "
+    },
+    {
+      "name": "app.elevenlabs",
+      "type": "com.autoshorts.ai.config.AppProperties$ElevenLabs",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.ElevenLabs getElevenlabs() "
+    },
+    {
+      "name": "app.ffmpeg",
+      "type": "com.autoshorts.ai.config.AppProperties$Ffmpeg",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Ffmpeg getFfmpeg() "
+    },
+    {
+      "name": "app.openai",
+      "type": "com.autoshorts.ai.config.AppProperties$OpenAi",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.OpenAi getOpenai() "
+    },
+    {
+      "name": "app.queue",
+      "type": "com.autoshorts.ai.config.AppProperties$Queue",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Queue getQueue() "
+    },
+    {
+      "name": "app.redis",
+      "type": "com.autoshorts.ai.config.AppProperties$Redis",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Redis getRedis() "
+    },
+    {
+      "name": "app.scheduler",
+      "type": "com.autoshorts.ai.config.AppProperties$Scheduler",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Scheduler getScheduler() "
+    },
+    {
+      "name": "app.security",
+      "type": "com.autoshorts.ai.config.SecurityProperties",
+      "sourceType": "com.autoshorts.ai.config.SecurityProperties"
+    },
+    {
+      "name": "app.storage",
+      "type": "com.autoshorts.ai.config.AppProperties$Storage",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Storage getStorage() "
+    },
+    {
+      "name": "app.web",
+      "type": "com.autoshorts.ai.config.AppProperties$Web",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Web getWeb() "
+    },
+    {
+      "name": "app.web.cors",
+      "type": "com.autoshorts.ai.config.AppProperties$Cors",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Web",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Cors getCors() "
+    }
+  ],
+  "properties": [
+    {
+      "name": "app.assets.default-background-path",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Assets"
+    },
+    {
+      "name": "app.cleanup.delete-temp-files",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Cleanup"
+    },
+    {
+      "name": "app.cleanup.keep-failed-job-files",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Cleanup"
+    },
+    {
+      "name": "app.elevenlabs.api-key",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
+    },
+    {
+      "name": "app.elevenlabs.base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
+    },
+    {
+      "name": "app.elevenlabs.default-voice-id",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
+    },
+    {
+      "name": "app.elevenlabs.mock",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
+    },
+    {
+      "name": "app.elevenlabs.model-id",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
+    },
+    {
+      "name": "app.ffmpeg.binary",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Ffmpeg"
+    },
+    {
+      "name": "app.ffmpeg.timeout-seconds",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Ffmpeg"
+    },
+    {
+      "name": "app.openai.api-key",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$OpenAi"
+    },
+    {
+      "name": "app.openai.base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$OpenAi"
+    },
+    {
+      "name": "app.openai.mock",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$OpenAi"
+    },
+    {
+      "name": "app.openai.model",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$OpenAi"
+    },
+    {
+      "name": "app.queue.consumer-concurrency",
+      "type": "java.lang.Integer",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.dead-letter-exchange",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.dead-letter-queue",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.dead-letter-routing-key",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.exchange",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.max-processing-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.queue",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.retry-initial-interval-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.retry-max-interval-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.retry-multiplier",
+      "type": "java.lang.Double",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.queue.routing-key",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Queue"
+    },
+    {
+      "name": "app.redis.cache-enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Redis"
+    },
+    {
+      "name": "app.redis.cache-ttl-seconds",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Redis"
+    },
+    {
+      "name": "app.scheduler.batch-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Scheduler"
+    },
+    {
+      "name": "app.scheduler.default-duration-seconds",
+      "type": "java.lang.Integer",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Scheduler"
+    },
+    {
+      "name": "app.scheduler.default-voice-id",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Scheduler"
+    },
+    {
+      "name": "app.scheduler.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Scheduler"
+    },
+    {
+      "name": "app.scheduler.fixed-delay-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Scheduler"
+    },
+    {
+      "name": "app.scheduler.initial-delay-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Scheduler"
+    },
+    {
+      "name": "app.scheduler.topic-source",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Scheduler"
+    },
+    {
+      "name": "app.security.jwt-secret",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.SecurityProperties"
+    },
+    {
+      "name": "app.security.token-ttl-seconds",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.SecurityProperties"
+    },
+    {
+      "name": "app.storage.access-key",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
+      "name": "app.storage.bucket",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
+      "name": "app.storage.endpoint",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
+      "name": "app.storage.mock",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
+      "name": "app.storage.presign-duration-seconds",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
+      "name": "app.storage.public-base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
+      "name": "app.storage.region",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
+      "name": "app.storage.secret-key",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
+      "name": "app.web.cors.allow-credentials",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Cors"
+    },
+    {
+      "name": "app.web.cors.allowed-headers",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Cors"
+    },
+    {
+      "name": "app.web.cors.allowed-methods",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Cors"
+    },
+    {
+      "name": "app.web.cors.allowed-origins",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Cors"
+    },
+    {
+      "name": "app.web.cors.exposed-headers",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Cors"
+    },
+    {
+      "name": "app.web.cors.max-age-seconds",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Cors"
+    },
+    {
+      "name": "app.working-dir",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties"
+    }
+  ],
+  "hints": []
+}

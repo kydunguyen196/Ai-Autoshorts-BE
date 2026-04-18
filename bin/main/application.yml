@@ -1,0 +1,110 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: auto-shorts-ai
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/autoshorts}
+    username: ${SPRING_DATASOURCE_USERNAME:autoshorts}
+    password: ${SPRING_DATASOURCE_PASSWORD:autoshorts}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+  jackson:
+    default-property-inclusion: non_null
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:autoshorts}
+    password: ${SPRING_RABBITMQ_PASSWORD:autoshorts}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: INFO
+    com.autoshorts.ai: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger - %msg%n"
+
+app:
+  working-dir: ${APP_WORKING_DIR:./work}
+  cleanup:
+    delete-temp-files: ${APP_CLEANUP_DELETE_TEMP_FILES:true}
+    keep-failed-job-files: ${APP_CLEANUP_KEEP_FAILED_JOB_FILES:true}
+  assets:
+    default-background-path: ${APP_ASSETS_DEFAULT_BACKGROUND_PATH:./assets/backgrounds/default.mp4}
+  ffmpeg:
+    binary: ${APP_FFMPEG_BINARY:${FFMPEG_PATH:ffmpeg}}
+    timeout-seconds: ${APP_FFMPEG_TIMEOUT_SECONDS:180}
+  redis:
+    cache-enabled: ${APP_REDIS_CACHE_ENABLED:true}
+    cache-ttl-seconds: ${APP_REDIS_CACHE_TTL_SECONDS:21600}
+  openai:
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-4.1-mini}
+    mock: ${OPENAI_MOCK:false}
+  elevenlabs:
+    base-url: ${ELEVENLABS_BASE_URL:https://api.elevenlabs.io}
+    api-key: ${ELEVENLABS_API_KEY:}
+    default-voice-id: ${ELEVENLABS_DEFAULT_VOICE_ID:}
+    model-id: ${ELEVENLABS_MODEL_ID:eleven_multilingual_v2}
+    mock: ${ELEVENLABS_MOCK:false}
+  storage:
+    mock: ${S3_MOCK:true}
+    region: ${S3_REGION:us-east-1}
+    bucket: ${S3_BUCKET:autoshorts-assets}
+    endpoint: ${S3_ENDPOINT:http://localhost:9000}
+    access-key: ${S3_ACCESS_KEY:minioadmin}
+    secret-key: ${S3_SECRET_KEY:minioadmin}
+    public-base-url: ${S3_PUBLIC_BASE_URL:http://localhost:9000/autoshorts-assets}
+    presign-duration-seconds: ${S3_PRESIGN_DURATION_SECONDS:86400}
+  scheduler:
+    enabled: ${APP_SCHEDULER_ENABLED:false}
+    fixed-delay-ms: ${APP_SCHEDULER_FIXED_DELAY_MS:60000}
+    initial-delay-ms: ${APP_SCHEDULER_INITIAL_DELAY_MS:15000}
+    batch-size: ${APP_SCHEDULER_BATCH_SIZE:3}
+    default-duration-seconds: ${APP_SCHEDULER_DEFAULT_DURATION_SECONDS:30}
+    default-voice-id: ${APP_SCHEDULER_DEFAULT_VOICE_ID:}
+    topic-source: ${APP_SCHEDULER_TOPIC_SOURCE:scheduler}
+  queue:
+    enabled: ${APP_QUEUE_ENABLED:true}
+    exchange: ${APP_QUEUE_EXCHANGE:autoshorts.video.exchange}
+    routing-key: ${APP_QUEUE_ROUTING_KEY:video.generate}
+    queue: ${APP_QUEUE_NAME:autoshorts.video.generate}
+    dead-letter-exchange: ${APP_QUEUE_DEAD_LETTER_EXCHANGE:autoshorts.video.dlx}
+    dead-letter-routing-key: ${APP_QUEUE_DEAD_LETTER_ROUTING_KEY:video.generate.dlq}
+    dead-letter-queue: ${APP_QUEUE_DEAD_LETTER_NAME:autoshorts.video.generate.dlq}
+    consumer-concurrency: ${APP_QUEUE_CONSUMER_CONCURRENCY:2}
+    max-processing-attempts: ${APP_QUEUE_MAX_PROCESSING_ATTEMPTS:3}
+    retry-initial-interval-ms: ${APP_QUEUE_RETRY_INITIAL_INTERVAL_MS:2000}
+    retry-multiplier: ${APP_QUEUE_RETRY_MULTIPLIER:2.0}
+    retry-max-interval-ms: ${APP_QUEUE_RETRY_MAX_INTERVAL_MS:10000}
+  web:
+    cors:
+      allowed-origins: ${APP_WEB_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+      allowed-methods: ${APP_WEB_CORS_ALLOWED_METHODS:GET,POST,PUT,PATCH,DELETE,OPTIONS}
+      allowed-headers: ${APP_WEB_CORS_ALLOWED_HEADERS:*}
+      exposed-headers: ${APP_WEB_CORS_EXPOSED_HEADERS:Location}
+      allow-credentials: ${APP_WEB_CORS_ALLOW_CREDENTIALS:true}
+      max-age-seconds: ${APP_WEB_CORS_MAX_AGE_SECONDS:3600}
+  security:
+    jwt-secret: ${APP_JWT_SECRET:replace-this-with-a-long-jwt-secret-for-local-dev}
+    token-ttl-seconds: ${APP_JWT_TOKEN_TTL_SECONDS:86400}
