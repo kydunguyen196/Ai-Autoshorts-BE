@@ -1,5 +1,6 @@
 package com.autoshorts.ai.client.impl;
 
+import com.autoshorts.ai.client.AiClient;
 import com.autoshorts.ai.client.ElevenLabsClient;
 import com.autoshorts.ai.client.model.SynthesizedAudio;
 import com.autoshorts.ai.config.AppProperties;
@@ -8,93 +9,74 @@ import com.autoshorts.ai.exception.ExternalServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
+import java.util.Set;
 
 @Component
 @ConditionalOnProperty(name = "app.elevenlabs.mock", havingValue = "false", matchIfMissing = true)
 public class WebClientElevenLabsClient implements ElevenLabsClient {
 
     private static final Logger log = LoggerFactory.getLogger(WebClientElevenLabsClient.class);
+    private static final Set<String> OPENAI_TTS_VOICES = Set.of(
+        "alloy",
+        "ash",
+        "ballad",
+        "coral",
+        "echo",
+        "fable",
+        "nova",
+        "onyx",
+        "sage",
+        "shimmer",
+        "verse"
+    );
 
-    private final WebClient webClient;
+    private final AiClient aiClient;
     private final AppProperties appProperties;
 
     public WebClientElevenLabsClient(
-        WebClient.Builder webClientBuilder,
+        AiClient aiClient,
         AppProperties appProperties
     ) {
+        this.aiClient = aiClient;
         this.appProperties = appProperties;
-        this.webClient = webClientBuilder
-            .baseUrl(appProperties.getElevenlabs().getBaseUrl())
-            .build();
     }
 
     @Override
     public SynthesizedAudio synthesizeSpeech(String text, String requestedVoiceId, int durationSeconds) {
-        if (!StringUtils.hasText(appProperties.getElevenlabs().getApiKey())) {
-            throw new ExternalServiceException("ElevenLabs API key is missing");
-        }
-        if (!StringUtils.hasText(requestedVoiceId)) {
-            throw new ExternalServiceException("ElevenLabs voiceId is required");
+        if (!appProperties.getElevenlabs().isEnabled()) {
+            throw new ExternalServiceException("Text to speech is disabled");
         }
 
-        String voiceId = requestedVoiceId.trim();
+        String voiceId = resolveVoiceId(requestedVoiceId);
         String modelId = resolveModelId();
         String outputFormat = resolveOutputFormat();
         String extension = resolveFileExtension(outputFormat);
         String contentType = resolveContentType(extension);
-
-        Map<String, Object> request = Map.of(
-            "text", text,
-            "model_id", modelId,
-            "output_format", outputFormat,
-            "voice_settings", Map.of(
-                "stability", 0.45,
-                "similarity_boost", 0.8
-            )
-        );
-
         Instant startedAt = Instant.now();
-        try {
-            byte[] bytes = webClient.post()
-                .uri("/v1/text-to-speech/{voiceId}", voiceId)
-                .header("xi-api-key", appProperties.getElevenlabs().getApiKey())
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_OCTET_STREAM)
-                .bodyValue(request)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, clientResponse ->
-                    clientResponse.bodyToMono(String.class)
-                        .defaultIfEmpty("")
-                        .flatMap(body -> Mono.error(new ExternalServiceException(
-                            "ElevenLabs request failed: status=%s body=%s".formatted(
-                                clientResponse.statusCode(),
-                                truncateBody(body, 400)
-                            )
-                        )))
-                )
-                .bodyToMono(byte[].class)
-                .block(Duration.ofMillis(Math.max(500, appProperties.getElevenlabs().getRequestTimeoutMs())));
 
+        try {
+            AiClient.SpeechSynthesisResult result = aiClient.synthesizeSpeech(
+                text,
+                modelId,
+                voiceId,
+                outputFormat
+            );
             long durationMs = Duration.between(startedAt, Instant.now()).toMillis();
+            byte[] bytes = result.data();
             if (bytes == null || bytes.length == 0) {
-                throw new ExternalServiceException("ElevenLabs returned empty audio response");
+                throw new ExternalServiceException("9Router returned empty audio response");
             }
 
             log.info(
-                "event=elevenlabs_request_success voiceId={} modelId={} outputFormat={} bytes={} durationMs={}",
-                voiceId,
-                modelId,
-                outputFormat,
+                "event=ai_tts_request_success provider=9router_openai_compatible voice={} model={} outputFormat={} bytes={} durationMs={}",
+                result.voice(),
+                result.model(),
+                result.responseFormat(),
                 bytes.length,
                 durationMs
             );
@@ -104,11 +86,11 @@ public class WebClientElevenLabsClient implements ElevenLabsClient {
                 extension,
                 contentType,
                 AudioGenerationMode.REAL,
-                "ELEVENLABS",
+                "9ROUTER_TTS",
                 "real_success",
-                voiceId,
-                modelId,
-                outputFormat,
+                result.voice(),
+                result.model(),
+                result.responseFormat(),
                 durationMs,
                 null,
                 null
@@ -116,38 +98,63 @@ public class WebClientElevenLabsClient implements ElevenLabsClient {
         } catch (Exception ex) {
             long durationMs = Duration.between(startedAt, Instant.now()).toMillis();
             log.warn(
-                "event=elevenlabs_request_failed voiceId={} modelId={} outputFormat={} durationMs={} message={}",
+                "event=ai_tts_request_failed provider=9router_openai_compatible voice={} model={} outputFormat={} durationMs={} message={}",
                 voiceId,
                 modelId,
                 outputFormat,
                 durationMs,
                 ex.getMessage()
             );
-            throw new ExternalServiceException("ElevenLabs synthesis failed: " + ex.getMessage());
+            throw new ExternalServiceException("9Router speech synthesis failed: " + ex.getMessage(), ex);
         }
+    }
+
+    private String resolveVoiceId(String requestedVoiceId) {
+        if (isOpenAiVoice(requestedVoiceId)) {
+            return requestedVoiceId.trim();
+        }
+        if (isOpenAiVoice(appProperties.getOpenai().getSpeechVoice())) {
+            return appProperties.getOpenai().getSpeechVoice().trim();
+        }
+        if (isOpenAiVoice(appProperties.getElevenlabs().getDefaultVoiceId())) {
+            return appProperties.getElevenlabs().getDefaultVoiceId().trim();
+        }
+        return "alloy";
     }
 
     private String resolveModelId() {
+        if (StringUtils.hasText(appProperties.getOpenai().getSpeechModel())) {
+            return appProperties.getOpenai().getSpeechModel().trim();
+        }
         if (StringUtils.hasText(appProperties.getElevenlabs().getDefaultModelId())) {
             return appProperties.getElevenlabs().getDefaultModelId().trim();
         }
-        return "eleven_v3";
+        return "openrouter/openai/gpt-4o-mini-tts";
     }
 
     private String resolveOutputFormat() {
+        if (StringUtils.hasText(appProperties.getOpenai().getSpeechResponseFormat())) {
+            return appProperties.getOpenai().getSpeechResponseFormat().trim();
+        }
         if (StringUtils.hasText(appProperties.getElevenlabs().getOutputFormat())) {
             return appProperties.getElevenlabs().getOutputFormat().trim();
         }
-        return "mp3_44100_128";
+        return "mp3";
     }
 
     private String resolveFileExtension(String outputFormat) {
         String lower = outputFormat == null ? "" : outputFormat.toLowerCase();
-        if (lower.startsWith("pcm") || lower.startsWith("ulaw") || lower.startsWith("alaw")) {
+        if (lower.startsWith("pcm") || lower.startsWith("wav")) {
             return "wav";
         }
         if (lower.startsWith("opus")) {
             return "opus";
+        }
+        if (lower.startsWith("aac")) {
+            return "aac";
+        }
+        if (lower.startsWith("flac")) {
+            return "flac";
         }
         return "mp3";
     }
@@ -156,17 +163,13 @@ public class WebClientElevenLabsClient implements ElevenLabsClient {
         return switch (extension) {
             case "wav" -> "audio/wav";
             case "opus" -> "audio/opus";
+            case "aac" -> "audio/aac";
+            case "flac" -> "audio/flac";
             default -> "audio/mpeg";
         };
     }
 
-    private String truncateBody(String body, int maxLength) {
-        if (body == null) {
-            return "";
-        }
-        if (body.length() <= maxLength) {
-            return body;
-        }
-        return body.substring(0, maxLength);
+    private boolean isOpenAiVoice(String value) {
+        return StringUtils.hasText(value) && OPENAI_TTS_VOICES.contains(value.trim().toLowerCase());
     }
 }

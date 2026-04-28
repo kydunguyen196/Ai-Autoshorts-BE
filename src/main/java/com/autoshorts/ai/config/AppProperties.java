@@ -263,10 +263,17 @@ public class AppProperties {
     public static class OpenAi {
 
         @NotBlank
-        private String baseUrl = "https://api.openai.com";
+        private String baseUrl = "http://localhost:20128/v1";
 
         private String apiKey;
-        private String model = "gpt-4.1-mini";
+        private String model = "if/qwen3-coder-plus";
+        private String speechModel = "openai/tts-1";
+        private String speechVoice = "alloy";
+        private String speechResponseFormat = "mp3";
+        @Min(1000)
+        private long requestTimeoutMs = 60_000;
+        @Min(1000)
+        private long speechRequestTimeoutMs = 60_000;
         private boolean mock;
 
         public String getBaseUrl() {
@@ -293,6 +300,46 @@ public class AppProperties {
             this.model = model;
         }
 
+        public String getSpeechModel() {
+            return speechModel;
+        }
+
+        public void setSpeechModel(String speechModel) {
+            this.speechModel = speechModel;
+        }
+
+        public String getSpeechVoice() {
+            return speechVoice;
+        }
+
+        public void setSpeechVoice(String speechVoice) {
+            this.speechVoice = speechVoice;
+        }
+
+        public String getSpeechResponseFormat() {
+            return speechResponseFormat;
+        }
+
+        public void setSpeechResponseFormat(String speechResponseFormat) {
+            this.speechResponseFormat = speechResponseFormat;
+        }
+
+        public long getRequestTimeoutMs() {
+            return requestTimeoutMs;
+        }
+
+        public void setRequestTimeoutMs(long requestTimeoutMs) {
+            this.requestTimeoutMs = requestTimeoutMs;
+        }
+
+        public long getSpeechRequestTimeoutMs() {
+            return speechRequestTimeoutMs;
+        }
+
+        public void setSpeechRequestTimeoutMs(long speechRequestTimeoutMs) {
+            this.speechRequestTimeoutMs = speechRequestTimeoutMs;
+        }
+
         public boolean isMock() {
             return mock;
         }
@@ -315,7 +362,7 @@ public class AppProperties {
         private int maxScenes = 5;
 
         @Min(500)
-        private long requestTimeoutMs = 30_000;
+        private long requestTimeoutMs = 60_000;
 
         public boolean isEnabled() {
             return enabled;

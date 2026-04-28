@@ -57,9 +57,14 @@ app:
     cache-enabled: ${APP_REDIS_CACHE_ENABLED:true}
     cache-ttl-seconds: ${APP_REDIS_CACHE_TTL_SECONDS:21600}
   openai:
-    base-url: ${OPENAI_BASE_URL:https://api.openai.com}
-    api-key: ${OPENAI_API_KEY:}
-    model: ${OPENAI_MODEL:gpt-4.1-mini}
+    base-url: ${AI_BASE_URL:${OPENAI_BASE_URL:https://api.openai.com/v1}}
+    api-key: ${apikey:${OPENAI_API_KEY:}}
+    model: ${AI_MODEL:${OPENAI_MODEL:if/qwen3-coder-plus}}
+    speech-model: ${AI_TTS_MODEL:openai/tts-1}
+    speech-voice: ${AI_TTS_VOICE:alloy}
+    speech-response-format: ${AI_TTS_RESPONSE_FORMAT:mp3}
+    request-timeout-ms: ${AI_REQUEST_TIMEOUT_MS:${OPENAI_REQUEST_TIMEOUT_MS:60000}}
+    speech-request-timeout-ms: ${AI_TTS_REQUEST_TIMEOUT_MS:${AI_REQUEST_TIMEOUT_MS:60000}}
     mock: ${OPENAI_MOCK:false}
   visual:
     enabled: ${APP_VISUAL_ENABLED:true}
@@ -68,15 +73,15 @@ app:
     model: ${APP_VISUAL_MODEL:gpt-image-1}
     size: ${APP_VISUAL_SIZE:1024x1536}
     max-scenes: ${APP_VISUAL_MAX_SCENES:5}
-    request-timeout-ms: ${APP_VISUAL_REQUEST_TIMEOUT_MS:30000}
+    request-timeout-ms: ${APP_VISUAL_REQUEST_TIMEOUT_MS:${AI_REQUEST_TIMEOUT_MS:60000}}
   elevenlabs:
     enabled: ${ELEVENLABS_ENABLED:true}
     base-url: ${ELEVENLABS_BASE_URL:https://api.elevenlabs.io}
     api-key: ${ELEVENLABS_API_KEY:}
-    default-voice-id: ${ELEVENLABS_DEFAULT_VOICE_ID:qByVAGjXwGlkcRDJoiHg}
-    default-model-id: ${ELEVENLABS_DEFAULT_MODEL_ID:${ELEVENLABS_MODEL_ID:eleven_v3}}
-    output-format: ${ELEVENLABS_OUTPUT_FORMAT:mp3_44100_128}
-    request-timeout-ms: ${ELEVENLABS_REQUEST_TIMEOUT_MS:15000}
+    default-voice-id: ${AI_TTS_VOICE:${ELEVENLABS_DEFAULT_VOICE_ID:alloy}}
+    default-model-id: ${AI_TTS_MODEL:${ELEVENLABS_DEFAULT_MODEL_ID:${ELEVENLABS_MODEL_ID:openai/tts-1}}}
+    output-format: ${AI_TTS_RESPONSE_FORMAT:${ELEVENLABS_OUTPUT_FORMAT:mp3}}
+    request-timeout-ms: ${AI_TTS_REQUEST_TIMEOUT_MS:${ELEVENLABS_REQUEST_TIMEOUT_MS:60000}}
     mock: ${ELEVENLABS_MOCK:false}
   storage:
     mock: ${S3_MOCK:true}
