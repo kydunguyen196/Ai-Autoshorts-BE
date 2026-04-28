@@ -60,6 +60,9 @@ public class VideoJob {
     @Column(name = "scene_breakdown_json", columnDefinition = "TEXT")
     private String sceneBreakdownJson;
 
+    @Column(name = "scene_assets_json", columnDefinition = "TEXT")
+    private String sceneAssetsJson;
+
     @Column(name = "resolved_style", length = 100)
     private String resolvedStyle;
 
@@ -229,6 +232,22 @@ public class VideoJob {
     @Column(name = "audio_failure_details", columnDefinition = "TEXT")
     private String audioFailureDetails;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visual_generation_mode", length = 32)
+    private VisualGenerationMode visualGenerationMode;
+
+    @Column(name = "visual_provider", length = 80)
+    private String visualProvider;
+
+    @Column(name = "visual_model_id", length = 120)
+    private String visualModelId;
+
+    @Column(name = "visual_failure_reason", columnDefinition = "TEXT")
+    private String visualFailureReason;
+
+    @Column(name = "visual_failure_details", columnDefinition = "TEXT")
+    private String visualFailureDetails;
+
     @Column(name = "subtitle_url", columnDefinition = "TEXT")
     private String subtitleUrl;
 
@@ -391,6 +410,14 @@ public class VideoJob {
 
     public void setSceneBreakdownJson(String sceneBreakdownJson) {
         this.sceneBreakdownJson = sceneBreakdownJson;
+    }
+
+    public String getSceneAssetsJson() {
+        return sceneAssetsJson;
+    }
+
+    public void setSceneAssetsJson(String sceneAssetsJson) {
+        this.sceneAssetsJson = sceneAssetsJson;
     }
 
     public String getResolvedStyle() {
@@ -831,6 +858,46 @@ public class VideoJob {
 
     public void setAudioFailureDetails(String audioFailureDetails) {
         this.audioFailureDetails = audioFailureDetails;
+    }
+
+    public VisualGenerationMode getVisualGenerationMode() {
+        return visualGenerationMode;
+    }
+
+    public void setVisualGenerationMode(VisualGenerationMode visualGenerationMode) {
+        this.visualGenerationMode = visualGenerationMode;
+    }
+
+    public String getVisualProvider() {
+        return visualProvider;
+    }
+
+    public void setVisualProvider(String visualProvider) {
+        this.visualProvider = visualProvider;
+    }
+
+    public String getVisualModelId() {
+        return visualModelId;
+    }
+
+    public void setVisualModelId(String visualModelId) {
+        this.visualModelId = visualModelId;
+    }
+
+    public String getVisualFailureReason() {
+        return visualFailureReason;
+    }
+
+    public void setVisualFailureReason(String visualFailureReason) {
+        this.visualFailureReason = visualFailureReason;
+    }
+
+    public String getVisualFailureDetails() {
+        return visualFailureDetails;
+    }
+
+    public void setVisualFailureDetails(String visualFailureDetails) {
+        this.visualFailureDetails = visualFailureDetails;
     }
 
     public String getSubtitleUrl() {

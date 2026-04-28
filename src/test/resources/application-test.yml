@@ -17,6 +17,14 @@ app:
     mock: true
     api-key: ""
     model: gpt-4.1-mini
+  visual:
+    enabled: true
+    mock: true
+    provider: openai
+    model: gpt-image-1
+    size: 1024x1536
+    max-scenes: 4
+    request-timeout-ms: 2000
   elevenlabs:
     enabled: true
     mock: true

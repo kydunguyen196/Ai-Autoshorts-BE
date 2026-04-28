@@ -76,6 +76,9 @@ class VideoGenerationFlowIT extends IntegrationTestBase {
         assertThat(completed.getFinalVideoUrl()).isNotBlank();
         assertThat(completed.getAudioUrl()).isNotBlank();
         assertThat(completed.getSubtitleUrl()).isNotBlank();
+        assertThat(completed.getSceneAssetsJson()).isNotBlank();
+        assertThat(completed.getVisualGenerationMode()).isNotNull();
+        assertThat(completed.getVisualProvider()).isNotBlank();
         assertThat(completed.getFinalVideoUrl()).startsWith("http://localhost:8080/api/media/jobs/");
         assertThat(completed.getAudioUrl()).startsWith("http://localhost:8080/api/media/jobs/");
         assertThat(completed.getSubtitleUrl()).startsWith("http://localhost:8080/api/media/jobs/");
@@ -94,6 +97,8 @@ class VideoGenerationFlowIT extends IntegrationTestBase {
         assertThat(detail.path("captionText").asText()).isNotBlank();
         assertThat(detail.path("contentGenerationMode").asText()).isIn("MOCK", "FALLBACK");
         assertThat(detail.path("audioGenerationMode").asText()).isIn("MOCK", "FALLBACK", "REAL");
+        assertThat(detail.path("visualGenerationMode").asText()).isIn("MOCK", "FALLBACK", "REAL");
+        assertThat(detail.path("sceneAssetsJson").asText()).isNotBlank();
     }
 
     @Test

@@ -95,6 +95,11 @@ public class ProcessFfmpegVideoComposer implements FfmpegVideoComposer {
         if (!Files.exists(request.getSubtitlePath())) {
             throw new VideoProcessingException("Subtitle file not found: " + request.getSubtitlePath());
         }
+        for (SceneMediaSegment segment : request.getSceneMediaSegments()) {
+            if (segment.getMediaPath() == null || !Files.exists(segment.getMediaPath())) {
+                throw new VideoProcessingException("Scene media file not found: " + (segment.getMediaPath() == null ? "null" : segment.getMediaPath()));
+            }
+        }
     }
 
     private List<String> buildCommand(VideoCompositionRequest request) {
@@ -105,27 +110,46 @@ public class ProcessFfmpegVideoComposer implements FfmpegVideoComposer {
         command.add("-loglevel");
         command.add("warning");
 
-        Path backgroundPath = request.getBackgroundMediaPath();
-        if (backgroundPath != null && Files.exists(backgroundPath)) {
-            if (isImage(backgroundPath)) {
+        List<SceneMediaSegment> sceneSegments = request.getSceneMediaSegments();
+        int audioInputIndex;
+        boolean useSceneSegments = sceneSegments != null && !sceneSegments.isEmpty();
+
+        if (useSceneSegments) {
+            for (SceneMediaSegment segment : sceneSegments) {
                 command.add("-loop");
                 command.add("1");
                 command.add("-framerate");
                 command.add("30");
+                command.add("-t");
+                command.add(String.valueOf(segment.getDurationSeconds()));
                 command.add("-i");
-                command.add(backgroundPath.toAbsolutePath().toString());
-            } else {
-                command.add("-stream_loop");
-                command.add("-1");
-                command.add("-i");
-                command.add(backgroundPath.toAbsolutePath().toString());
+                command.add(segment.getMediaPath().toAbsolutePath().toString());
             }
+            audioInputIndex = sceneSegments.size();
         } else {
-            log.warn("event=background_missing fallback=color_source configuredPath={}", backgroundPath);
-            command.add("-f");
-            command.add("lavfi");
-            command.add("-i");
-            command.add("color=c=0x1a1a1a:s=1080x1920:r=30");
+            Path backgroundPath = request.getBackgroundMediaPath();
+            if (backgroundPath != null && Files.exists(backgroundPath)) {
+                if (isImage(backgroundPath)) {
+                    command.add("-loop");
+                    command.add("1");
+                    command.add("-framerate");
+                    command.add("30");
+                    command.add("-i");
+                    command.add(backgroundPath.toAbsolutePath().toString());
+                } else {
+                    command.add("-stream_loop");
+                    command.add("-1");
+                    command.add("-i");
+                    command.add(backgroundPath.toAbsolutePath().toString());
+                }
+            } else {
+                log.warn("event=background_missing fallback=color_source configuredPath={}", backgroundPath);
+                command.add("-f");
+                command.add("lavfi");
+                command.add("-i");
+                command.add("color=c=0x1a1a1a:s=1080x1920:r=30");
+            }
+            audioInputIndex = 1;
         }
 
         command.add("-i");
@@ -134,11 +158,21 @@ public class ProcessFfmpegVideoComposer implements FfmpegVideoComposer {
         // TODO: Add optional background music mixing for richer compositions.
         String subtitlePath = escapeForFfmpegFilter(request.getSubtitlePath().toAbsolutePath().toString());
         String subtitleFilter = "subtitles=filename='" + subtitlePath + "':force_style='Alignment=2,FontName=Arial,"
-            + "FontSize=14,PrimaryColour=&H00FFFFFF&,OutlineColour=&H000000&,BorderStyle=3,Outline=2,Shadow=1,MarginV=70'";
-        String videoFilter = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920," + subtitleFilter;
+            + "FontSize=15,PrimaryColour=&H00FFFFFF&,OutlineColour=&H000000&,BorderStyle=3,Outline=2,Shadow=1,MarginV=70'";
 
-        command.add("-vf");
-        command.add(videoFilter);
+        if (useSceneSegments) {
+            command.add("-filter_complex");
+            command.add(buildSceneSlideshowFilter(sceneSegments, subtitleFilter));
+            command.add("-map");
+            command.add("[vout]");
+            command.add("-map");
+            command.add(audioInputIndex + ":a");
+        } else {
+            String videoFilter = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920," + subtitleFilter;
+            command.add("-vf");
+            command.add(videoFilter);
+        }
+
         command.add("-t");
         command.add(String.valueOf(request.getDurationSeconds()));
         command.add("-c:v");
@@ -157,6 +191,36 @@ public class ProcessFfmpegVideoComposer implements FfmpegVideoComposer {
         command.add(request.getOutputPath().toAbsolutePath().toString());
 
         return command;
+    }
+
+    private String buildSceneSlideshowFilter(List<SceneMediaSegment> sceneSegments, String subtitleFilter) {
+        StringBuilder filter = new StringBuilder();
+        for (int index = 0; index < sceneSegments.size(); index++) {
+            SceneMediaSegment segment = sceneSegments.get(index);
+            int frames = Math.max(1, segment.getDurationSeconds() * 30);
+            String xExpr = index % 2 == 0 ? "(iw-iw/zoom)*0.35" : "(iw-iw/zoom)*0.65";
+            String yExpr = index % 3 == 0 ? "(ih-ih/zoom)*0.30" : "(ih-ih/zoom)*0.55";
+
+            filter
+                .append('[').append(index).append(":v]")
+                .append("scale=1260:2240:force_original_aspect_ratio=increase,")
+                .append("crop=1080:1920,")
+                .append("zoompan=z='min(zoom+0.00085,1.12)':")
+                .append("x='").append(xExpr).append("':")
+                .append("y='").append(yExpr).append("':")
+                .append("d=").append(frames).append(":")
+                .append("s=1080x1920:fps=30,")
+                .append("format=yuv420p")
+                .append("[v").append(index).append("];");
+        }
+
+        for (int index = 0; index < sceneSegments.size(); index++) {
+            filter.append("[v").append(index).append(']');
+        }
+        filter
+            .append("concat=n=").append(sceneSegments.size()).append(":v=1:a=0[vbase];")
+            .append("[vbase]").append(subtitleFilter).append("[vout]");
+        return filter.toString();
     }
 
     private List<String> readOutput(Process process) {

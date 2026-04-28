@@ -450,6 +450,11 @@ public class VideoJobService {
         job.setAudioProviderRequestDurationMs(null);
         job.setAudioFailureReason(null);
         job.setAudioFailureDetails(null);
+        job.setVisualGenerationMode(null);
+        job.setVisualProvider(null);
+        job.setVisualModelId(null);
+        job.setVisualFailureReason(null);
+        job.setVisualFailureDetails(null);
         job.setSubtitleUrl(null);
         job.setFinalVideoUrl(null);
         job.setHookText(null);
@@ -457,6 +462,7 @@ public class VideoJobService {
         job.setCaptionText(null);
         job.setHashtags(null);
         job.setSceneBreakdownJson(null);
+        job.setSceneAssetsJson(null);
         job.setResolvedStyle(null);
         job.setPromptTemplateId(null);
         job.setContentGenerationMode(null);
@@ -497,7 +503,7 @@ public class VideoJobService {
         job.setLastErrorAt(null);
         VideoJob saved = saveAndCache(job);
         log.info(
-            "event=job_retry_reset jobId={} clearedFields=script,audioUrl,audioGenerationMode,audioProvider,subtitleUrl,finalVideoUrl,hookText,ctaText,captionText,hashtags,sceneBreakdownJson,resolvedStyle,promptTemplateId,contentGenerationMode,contentVariantKey,hookStrategy,ctaStrategy,structureStrategy,hookStrengthScore,engagementScore,engagementTagsJson,rankingScore,topCandidate,topCandidateRank,publishStatus,scheduledPublishAt,publishPlatform,publishReadyAt,publishRequestedAt,publishStartedAt,publishedAt,publishAttemptCount,publishProvider,publishExternalId,publishFailureReason,publishFailureDetails,publishLastErrorAt,startedAt,completedAt,lastErrorAt retainedInputs=topic,style,voiceId,durationSeconds,attemptCount,generationBatchId,generationGroupId,variantIndex,variantCount",
+            "event=job_retry_reset jobId={} clearedFields=script,audioUrl,audioGenerationMode,audioProvider,audioVoiceId,audioModelId,audioOutputFormat,audioProviderRequestDurationMs,audioFailureReason,audioFailureDetails,visualGenerationMode,visualProvider,visualModelId,visualFailureReason,visualFailureDetails,subtitleUrl,finalVideoUrl,hookText,ctaText,captionText,hashtags,sceneBreakdownJson,sceneAssetsJson,resolvedStyle,promptTemplateId,contentGenerationMode,contentVariantKey,hookStrategy,ctaStrategy,structureStrategy,hookStrengthScore,engagementScore,engagementTagsJson,rankingScore,topCandidate,topCandidateRank,publishStatus,scheduledPublishAt,publishPlatform,publishReadyAt,publishRequestedAt,publishStartedAt,publishedAt,publishAttemptCount,publishProvider,publishExternalId,publishFailureReason,publishFailureDetails,publishLastErrorAt,startedAt,completedAt,lastErrorAt retainedInputs=topic,style,voiceId,durationSeconds,attemptCount,generationBatchId,generationGroupId,variantIndex,variantCount",
             jobId
         );
         return saved;

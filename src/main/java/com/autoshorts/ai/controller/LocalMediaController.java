@@ -73,6 +73,15 @@ public class LocalMediaController {
         if (name.endsWith(".mp3")) {
             return "audio/mpeg";
         }
+        if (name.endsWith(".png")) {
+            return "image/png";
+        }
+        if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (name.endsWith(".webp")) {
+            return "image/webp";
+        }
         return MediaType.APPLICATION_OCTET_STREAM_VALUE;
     }
 }

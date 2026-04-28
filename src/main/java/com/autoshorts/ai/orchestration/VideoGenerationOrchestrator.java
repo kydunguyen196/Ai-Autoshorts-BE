@@ -9,8 +9,10 @@ import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.entity.WebhookEventType;
 import com.autoshorts.ai.exception.InvalidJobStateException;
 import com.autoshorts.ai.ffmpeg.FfmpegVideoComposer;
+import com.autoshorts.ai.ffmpeg.SceneMediaSegment;
 import com.autoshorts.ai.ffmpeg.VideoCompositionRequest;
 import com.autoshorts.ai.service.ContentGenerationService;
+import com.autoshorts.ai.service.VisualAssetGenerationService;
 import com.autoshorts.ai.service.VideoJobService;
 import com.autoshorts.ai.service.WebhookDeliveryService;
 import com.autoshorts.ai.service.model.GeneratedContent;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,6 +39,7 @@ public class VideoGenerationOrchestrator {
     private final ElevenLabsClient elevenLabsClient;
     private final DeterministicPreviewAudioGenerator previewAudioGenerator;
     private final SubtitleGeneratorService subtitleGeneratorService;
+    private final VisualAssetGenerationService visualAssetGenerationService;
     private final FfmpegVideoComposer ffmpegVideoComposer;
     private final StorageClient storageClient;
     private final WebhookDeliveryService webhookDeliveryService;
@@ -48,6 +52,7 @@ public class VideoGenerationOrchestrator {
         ElevenLabsClient elevenLabsClient,
         DeterministicPreviewAudioGenerator previewAudioGenerator,
         SubtitleGeneratorService subtitleGeneratorService,
+        VisualAssetGenerationService visualAssetGenerationService,
         FfmpegVideoComposer ffmpegVideoComposer,
         StorageClient storageClient,
         WebhookDeliveryService webhookDeliveryService,
@@ -59,6 +64,7 @@ public class VideoGenerationOrchestrator {
         this.elevenLabsClient = elevenLabsClient;
         this.previewAudioGenerator = previewAudioGenerator;
         this.subtitleGeneratorService = subtitleGeneratorService;
+        this.visualAssetGenerationService = visualAssetGenerationService;
         this.ffmpegVideoComposer = ffmpegVideoComposer;
         this.storageClient = storageClient;
         this.webhookDeliveryService = webhookDeliveryService;
@@ -107,6 +113,7 @@ public class VideoGenerationOrchestrator {
                 current.setHashtags(joinHashtags(generatedContent.hashtags()));
                 current.setSceneBreakdownJson(generatedContent.sceneBreakdownJson());
             });
+            job.setSceneBreakdownJson(generatedContent.sceneBreakdownJson());
             log.info(
                 "event=content_metadata_persisted jobId={} mode={} style={} templateId={} variantKey={} hookType={} ctaType={} structureType={} hookScore={} engagementScore={}",
                 jobId,
@@ -137,11 +144,26 @@ public class VideoGenerationOrchestrator {
             SubtitleArtifact subtitleArtifact = runStep(jobId, currentStep, () -> generateAndUploadSubtitles(job, script, activeJobDir));
             videoJobService.updateJob(jobId, current -> current.setSubtitleUrl(subtitleArtifact.subtitleUrl()));
 
+            currentStep = GenerationStep.VISUAL_ASSET_GENERATION;
+            VisualAssetGenerationService.GeneratedVisualAssets visualAssets = runStep(
+                jobId,
+                currentStep,
+                () -> visualAssetGenerationService.generateAndUploadSceneAssets(job, activeJobDir)
+            );
+            videoJobService.updateJob(jobId, current -> {
+                current.setSceneAssetsJson(visualAssets.sceneAssetsJson());
+                current.setVisualGenerationMode(visualAssets.mode());
+                current.setVisualProvider(visualAssets.provider());
+                current.setVisualModelId(visualAssets.modelId());
+                current.setVisualFailureReason(visualAssets.failureReason());
+                current.setVisualFailureDetails(visualAssets.failureDetails());
+            });
+
             currentStep = GenerationStep.VIDEO_COMPOSITION;
             String finalVideoUrl = runStep(
                 jobId,
                 currentStep,
-                () -> composeAndUploadVideo(job, audioArtifact.audioPath(), subtitleArtifact.subtitlePath(), activeJobDir)
+                () -> composeAndUploadVideo(job, audioArtifact.audioPath(), subtitleArtifact.subtitlePath(), visualAssets.sceneSegments(), activeJobDir)
             );
             VideoJob completedJob = videoJobService.markCompleted(jobId, finalVideoUrl);
             emitWebhookSafely(WebhookEventType.JOB_GENERATED, completedJob);
@@ -199,7 +221,13 @@ public class VideoGenerationOrchestrator {
         return new SubtitleArtifact(subtitlePath, subtitleUrl);
     }
 
-    private String composeAndUploadVideo(VideoJob job, Path audioPath, Path subtitlePath, Path jobDir) {
+    private String composeAndUploadVideo(
+        VideoJob job,
+        Path audioPath,
+        Path subtitlePath,
+        List<SceneMediaSegment> sceneSegments,
+        Path jobDir
+    ) {
         Path outputPath = jobDir.resolve("final.mp4");
         Path backgroundPath = resolveBackgroundPath();
 
@@ -209,7 +237,8 @@ public class VideoGenerationOrchestrator {
             subtitlePath,
             outputPath,
             job.getDurationSeconds(),
-            null
+            null,
+            sceneSegments
         );
         ffmpegVideoComposer.compose(request);
 

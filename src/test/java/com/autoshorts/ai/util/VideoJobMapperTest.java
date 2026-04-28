@@ -7,6 +7,7 @@ import com.autoshorts.ai.entity.GenerationStep;
 import com.autoshorts.ai.entity.JobStatus;
 import com.autoshorts.ai.entity.PublishStatus;
 import com.autoshorts.ai.entity.VideoJob;
+import com.autoshorts.ai.entity.VisualGenerationMode;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -37,6 +38,7 @@ class VideoJobMapperTest {
         job.setCaptionText("Caption");
         job.setHashtags("#one,#two");
         job.setSceneBreakdownJson("{\"scenes\":2}");
+        job.setSceneAssetsJson("[{\"index\":1,\"assetUrl\":\"scene-1.png\"}]");
         job.setResolvedStyle("self-improvement");
         job.setPromptTemplateId(templateId);
         job.setContentGenerationMode(ContentGenerationMode.REAL);
@@ -70,6 +72,11 @@ class VideoJobMapperTest {
         job.setAudioUrl("audio-url");
         job.setAudioGenerationMode(AudioGenerationMode.MOCK);
         job.setAudioProvider("mock_elevenlabs");
+        job.setVisualGenerationMode(VisualGenerationMode.MOCK);
+        job.setVisualProvider("mock_visual");
+        job.setVisualModelId("mock-visual-v1");
+        job.setVisualFailureReason("none");
+        job.setVisualFailureDetails("details");
         job.setSubtitleUrl("subtitle-url");
         job.setFinalVideoUrl("video-url");
         job.setErrorMessage("error");
@@ -97,6 +104,7 @@ class VideoJobMapperTest {
         assertThat(response.getCaptionText()).isEqualTo("Caption");
         assertThat(response.getHashtags()).containsExactly("#one", "#two");
         assertThat(response.getSceneBreakdownJson()).isEqualTo("{\"scenes\":2}");
+        assertThat(response.getSceneAssetsJson()).isEqualTo("[{\"index\":1,\"assetUrl\":\"scene-1.png\"}]");
         assertThat(response.getResolvedStyle()).isEqualTo("self-improvement");
         assertThat(response.getPromptTemplateId()).isEqualTo(templateId);
         assertThat(response.getContentGenerationMode()).isEqualTo(ContentGenerationMode.REAL);
@@ -130,6 +138,11 @@ class VideoJobMapperTest {
         assertThat(response.getAudioUrl()).isEqualTo("audio-url");
         assertThat(response.getAudioGenerationMode()).isEqualTo(AudioGenerationMode.MOCK);
         assertThat(response.getAudioProvider()).isEqualTo("mock_elevenlabs");
+        assertThat(response.getVisualGenerationMode()).isEqualTo(VisualGenerationMode.MOCK);
+        assertThat(response.getVisualProvider()).isEqualTo("mock_visual");
+        assertThat(response.getVisualModelId()).isEqualTo("mock-visual-v1");
+        assertThat(response.getVisualFailureReason()).isEqualTo("none");
+        assertThat(response.getVisualFailureDetails()).isEqualTo("details");
         assertThat(response.getSubtitleUrl()).isEqualTo("subtitle-url");
         assertThat(response.getFinalVideoUrl()).isEqualTo("video-url");
         assertThat(response.getErrorMessage()).isEqualTo("error");

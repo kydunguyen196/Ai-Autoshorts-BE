@@ -32,6 +32,9 @@ public class AppProperties {
     private OpenAi openai = new OpenAi();
 
     @NotNull
+    private Visual visual = new Visual();
+
+    @NotNull
     private ElevenLabs elevenlabs = new ElevenLabs();
 
     @NotNull
@@ -101,6 +104,14 @@ public class AppProperties {
 
     public void setOpenai(OpenAi openai) {
         this.openai = openai;
+    }
+
+    public Visual getVisual() {
+        return visual;
+    }
+
+    public void setVisual(Visual visual) {
+        this.visual = visual;
     }
 
     public ElevenLabs getElevenlabs() {
@@ -288,6 +299,78 @@ public class AppProperties {
 
         public void setMock(boolean mock) {
             this.mock = mock;
+        }
+    }
+
+    public static class Visual {
+
+        private boolean enabled = true;
+        private boolean mock = true;
+        private String provider = "openai";
+        private String model = "gpt-image-1";
+        private String size = "1024x1536";
+
+        @Min(1)
+        @Max(12)
+        private int maxScenes = 5;
+
+        @Min(500)
+        private long requestTimeoutMs = 30_000;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public boolean isMock() {
+            return mock;
+        }
+
+        public void setMock(boolean mock) {
+            this.mock = mock;
+        }
+
+        public String getProvider() {
+            return provider;
+        }
+
+        public void setProvider(String provider) {
+            this.provider = provider;
+        }
+
+        public String getModel() {
+            return model;
+        }
+
+        public void setModel(String model) {
+            this.model = model;
+        }
+
+        public String getSize() {
+            return size;
+        }
+
+        public void setSize(String size) {
+            this.size = size;
+        }
+
+        public int getMaxScenes() {
+            return maxScenes;
+        }
+
+        public void setMaxScenes(int maxScenes) {
+            this.maxScenes = maxScenes;
+        }
+
+        public long getRequestTimeoutMs() {
+            return requestTimeoutMs;
+        }
+
+        public void setRequestTimeoutMs(long requestTimeoutMs) {
+            this.requestTimeoutMs = requestTimeoutMs;
         }
     }
 

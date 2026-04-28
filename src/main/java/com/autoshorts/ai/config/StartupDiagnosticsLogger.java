@@ -27,16 +27,26 @@ public class StartupDiagnosticsLogger implements ApplicationRunner {
         String openAiEffectiveMode = openAiMockConfigured
             ? "MOCK"
             : (openAiApiKeyPresent ? "REAL" : "FALLBACK_ONLY");
+        boolean visualMockConfigured = appProperties.getVisual().isMock();
+        String visualEffectiveMode = !appProperties.getVisual().isEnabled()
+            ? "DISABLED"
+            : (visualMockConfigured ? "MOCK" : (openAiApiKeyPresent ? "REAL" : "FALLBACK_ONLY"));
         boolean elevenLabsMockEffective = appProperties.getElevenlabs().isMock()
             || !StringUtils.hasText(appProperties.getElevenlabs().getApiKey());
 
         log.info(
-            "event=startup_config workingDir={} ffmpegBinary={} openAiMockConfigured={} openAiApiKeyPresent={} openAiEffectiveMode={} elevenLabsMockEffective={} storageMock={} storageLocalPublicBaseUrl={} cleanupEnabled={} keepFailedJobFiles={} schedulerEnabled={} schedulerFixedDelayMs={} schedulerBatchSize={} queueEnabled={} queueName={} queueExchange={} queueRoutingKey={} queueDeadLetterName={} queueMaxProcessingAttempts={} publishEnabled={} publishProvider={} publishDefaultPlatform={} webhookEnabled={} webhookEndpointConfigured={}",
+            "event=startup_config workingDir={} ffmpegBinary={} openAiMockConfigured={} openAiApiKeyPresent={} openAiEffectiveMode={} visualEnabled={} visualProvider={} visualMockConfigured={} visualEffectiveMode={} visualModel={} visualMaxScenes={} elevenLabsMockEffective={} storageMock={} storageLocalPublicBaseUrl={} cleanupEnabled={} keepFailedJobFiles={} schedulerEnabled={} schedulerFixedDelayMs={} schedulerBatchSize={} queueEnabled={} queueName={} queueExchange={} queueRoutingKey={} queueDeadLetterName={} queueMaxProcessingAttempts={} publishEnabled={} publishProvider={} publishDefaultPlatform={} webhookEnabled={} webhookEndpointConfigured={}",
             Path.of(appProperties.getWorkingDir()).toAbsolutePath().normalize(),
             appProperties.getFfmpeg().getBinary(),
             openAiMockConfigured,
             openAiApiKeyPresent,
             openAiEffectiveMode,
+            appProperties.getVisual().isEnabled(),
+            appProperties.getVisual().getProvider(),
+            visualMockConfigured,
+            visualEffectiveMode,
+            appProperties.getVisual().getModel(),
+            appProperties.getVisual().getMaxScenes(),
             elevenLabsMockEffective,
             appProperties.getStorage().isMock(),
             appProperties.getStorage().getLocalPublicBaseUrl(),

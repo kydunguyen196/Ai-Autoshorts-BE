@@ -6,6 +6,7 @@ import com.autoshorts.ai.entity.ContentGenerationMode;
 import com.autoshorts.ai.entity.PublishStatus;
 import com.autoshorts.ai.entity.AudioGenerationMode;
 import com.autoshorts.ai.entity.ReviewStatus;
+import com.autoshorts.ai.entity.VisualGenerationMode;
 
 import java.time.Instant;
 import java.util.List;
@@ -26,6 +27,7 @@ public class VideoJobResponse {
     private String captionText;
     private List<String> hashtags;
     private String sceneBreakdownJson;
+    private String sceneAssetsJson;
     private String resolvedStyle;
     private UUID promptTemplateId;
     private ContentGenerationMode contentGenerationMode;
@@ -81,6 +83,11 @@ public class VideoJobResponse {
     private Long audioProviderRequestDurationMs;
     private String audioFailureReason;
     private String audioFailureDetails;
+    private VisualGenerationMode visualGenerationMode;
+    private String visualProvider;
+    private String visualModelId;
+    private String visualFailureReason;
+    private String visualFailureDetails;
     private String subtitleUrl;
     private String finalVideoUrl;
     private String errorMessage;
@@ -203,6 +210,14 @@ public class VideoJobResponse {
 
     public void setSceneBreakdownJson(String sceneBreakdownJson) {
         this.sceneBreakdownJson = sceneBreakdownJson;
+    }
+
+    public String getSceneAssetsJson() {
+        return sceneAssetsJson;
+    }
+
+    public void setSceneAssetsJson(String sceneAssetsJson) {
+        this.sceneAssetsJson = sceneAssetsJson;
     }
 
     public String getResolvedStyle() {
@@ -651,6 +666,46 @@ public class VideoJobResponse {
 
     public void setAudioFailureDetails(String audioFailureDetails) {
         this.audioFailureDetails = audioFailureDetails;
+    }
+
+    public VisualGenerationMode getVisualGenerationMode() {
+        return visualGenerationMode;
+    }
+
+    public void setVisualGenerationMode(VisualGenerationMode visualGenerationMode) {
+        this.visualGenerationMode = visualGenerationMode;
+    }
+
+    public String getVisualProvider() {
+        return visualProvider;
+    }
+
+    public void setVisualProvider(String visualProvider) {
+        this.visualProvider = visualProvider;
+    }
+
+    public String getVisualModelId() {
+        return visualModelId;
+    }
+
+    public void setVisualModelId(String visualModelId) {
+        this.visualModelId = visualModelId;
+    }
+
+    public String getVisualFailureReason() {
+        return visualFailureReason;
+    }
+
+    public void setVisualFailureReason(String visualFailureReason) {
+        this.visualFailureReason = visualFailureReason;
+    }
+
+    public String getVisualFailureDetails() {
+        return visualFailureDetails;
+    }
+
+    public void setVisualFailureDetails(String visualFailureDetails) {
+        this.visualFailureDetails = visualFailureDetails;
     }
 
     public String getErrorMessage() {

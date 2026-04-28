@@ -61,6 +61,14 @@ app:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-4.1-mini}
     mock: ${OPENAI_MOCK:false}
+  visual:
+    enabled: ${APP_VISUAL_ENABLED:true}
+    mock: ${APP_VISUAL_MOCK:true}
+    provider: ${APP_VISUAL_PROVIDER:openai}
+    model: ${APP_VISUAL_MODEL:gpt-image-1}
+    size: ${APP_VISUAL_SIZE:1024x1536}
+    max-scenes: ${APP_VISUAL_MAX_SCENES:5}
+    request-timeout-ms: ${APP_VISUAL_REQUEST_TIMEOUT_MS:30000}
   elevenlabs:
     enabled: ${ELEVENLABS_ENABLED:true}
     base-url: ${ELEVENLABS_BASE_URL:https://api.elevenlabs.io}

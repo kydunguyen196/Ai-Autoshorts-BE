@@ -27,6 +27,7 @@ public final class VideoJobMapper {
         response.setCaptionText(job.getCaptionText());
         response.setHashtags(parseHashtags(job.getHashtags()));
         response.setSceneBreakdownJson(job.getSceneBreakdownJson());
+        response.setSceneAssetsJson(job.getSceneAssetsJson());
         response.setResolvedStyle(job.getResolvedStyle());
         response.setPromptTemplateId(job.getPromptTemplateId());
         response.setContentGenerationMode(job.getContentGenerationMode());
@@ -82,6 +83,11 @@ public final class VideoJobMapper {
         response.setAudioProviderRequestDurationMs(job.getAudioProviderRequestDurationMs());
         response.setAudioFailureReason(job.getAudioFailureReason());
         response.setAudioFailureDetails(job.getAudioFailureDetails());
+        response.setVisualGenerationMode(job.getVisualGenerationMode());
+        response.setVisualProvider(job.getVisualProvider());
+        response.setVisualModelId(job.getVisualModelId());
+        response.setVisualFailureReason(job.getVisualFailureReason());
+        response.setVisualFailureDetails(job.getVisualFailureDetails());
         response.setSubtitleUrl(job.getSubtitleUrl());
         response.setFinalVideoUrl(job.getFinalVideoUrl());
         response.setErrorMessage(job.getErrorMessage());

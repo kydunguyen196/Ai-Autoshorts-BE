@@ -1,9 +1,11 @@
 package com.autoshorts.ai.integration;
 
 import com.autoshorts.ai.client.ElevenLabsClient;
+import com.autoshorts.ai.client.VisualGenerationClient;
 import com.autoshorts.ai.entity.AudioGenerationMode;
 import com.autoshorts.ai.entity.JobStatus;
 import com.autoshorts.ai.entity.VideoJob;
+import com.autoshorts.ai.entity.VisualGenerationMode;
 import com.autoshorts.ai.entity.WebhookDelivery;
 import com.autoshorts.ai.entity.WebhookDeliveryStatus;
 import com.autoshorts.ai.integration.support.IntegrationTestBase;
@@ -57,9 +59,13 @@ class WebhookAndAudioFallbackIT extends IntegrationTestBase {
     @SpyBean
     private ElevenLabsClient elevenLabsClient;
 
+    @SpyBean
+    private VisualGenerationClient visualGenerationClient;
+
     @AfterEach
     void resetSpies() {
         Mockito.reset(elevenLabsClient);
+        Mockito.reset(visualGenerationClient);
     }
 
     @Test
@@ -126,5 +132,20 @@ class WebhookAndAudioFallbackIT extends IntegrationTestBase {
         assertThat(eventTypes).contains("job.approved");
         assertThat(eventTypes).contains("publish.requested");
         assertThat(eventTypes).contains("publish.succeeded");
+    }
+
+    @Test
+    void shouldUseFallbackVisualModeWhenVisualClientThrows() throws Exception {
+        doThrow(new RuntimeException("forced_visual_failure"))
+            .when(visualGenerationClient)
+            .generateSceneImage(anyString(), anyInt());
+
+        AuthSession session = registerUser("visual-fallback");
+        UUID jobId = submitGenerate(session, "Visual fallback mode", "storytelling", 26, null);
+
+        VideoJob completed = awaitJobStatus(jobId, JobStatus.COMPLETED, Duration.ofSeconds(40));
+        assertThat(completed.getSceneAssetsJson()).isNotBlank();
+        assertThat(completed.getVisualGenerationMode()).isEqualTo(VisualGenerationMode.FALLBACK);
+        assertThat(completed.getVisualProvider()).contains("deterministic_visual");
     }
 }
