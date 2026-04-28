@@ -1,0 +1,69 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+app:
+  security:
+    jwt-secret: test-jwt-secret-minimum-32-characters-long-123456
+    token-ttl-seconds: 86400
+  working-dir: ./build/test-work
+  cleanup:
+    delete-temp-files: true
+    keep-failed-job-files: false
+  openai:
+    mock: true
+    api-key: ""
+    model: gpt-4.1-mini
+  visual:
+    enabled: true
+    mock: true
+    provider: openai
+    model: gpt-image-1
+    size: 1024x1536
+    max-scenes: 4
+    request-timeout-ms: 2000
+  elevenlabs:
+    enabled: true
+    mock: true
+    api-key: ""
+    default-voice-id: qByVAGjXwGlkcRDJoiHg
+    default-model-id: eleven_v3
+    output-format: mp3_44100_128
+    request-timeout-ms: 500
+  storage:
+    mock: true
+    local-public-base-url: http://localhost:8080
+  redis:
+    cache-enabled: false
+  queue:
+    enabled: true
+    consumer-concurrency: 1
+    max-processing-attempts: 2
+    retry-initial-interval-ms: 100
+    retry-multiplier: 1.0
+    retry-max-interval-ms: 200
+  scheduler:
+    enabled: false
+    fixed-delay-ms: 1000
+    initial-delay-ms: 1000
+    batch-size: 3
+    default-duration-seconds: 30
+    topic-source: scheduler
+  publish:
+    enabled: true
+    provider: mock
+    default-platform: mock-social
+    mock-failure-keyword: "[publish-fail]"
+    mock-latency-ms: 0
+  tiktok:
+    client-key: test-client-key
+    client-secret: test-client-secret
+    redirect-uri: http://localhost/test/callback
+    scopes: user.info.basic,video.publish
+    webhook-verify-token: test-verify-token
+    api-base-url: https://open.tiktokapis.com
+  webhook:
+    enabled: false

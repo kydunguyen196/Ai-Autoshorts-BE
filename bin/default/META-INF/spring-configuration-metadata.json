@@ -36,6 +36,12 @@
       "sourceMethod": "public com.autoshorts.ai.config.AppProperties.OpenAi getOpenai() "
     },
     {
+      "name": "app.publish",
+      "type": "com.autoshorts.ai.config.AppProperties$Publish",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Publish getPublish() "
+    },
+    {
       "name": "app.queue",
       "type": "com.autoshorts.ai.config.AppProperties$Queue",
       "sourceType": "com.autoshorts.ai.config.AppProperties",
@@ -65,6 +71,18 @@
       "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Storage getStorage() "
     },
     {
+      "name": "app.tiktok",
+      "type": "com.autoshorts.ai.config.AppProperties$TikTok",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.TikTok getTiktok() "
+    },
+    {
+      "name": "app.visual",
+      "type": "com.autoshorts.ai.config.AppProperties$Visual",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Visual getVisual() "
+    },
+    {
       "name": "app.web",
       "type": "com.autoshorts.ai.config.AppProperties$Web",
       "sourceType": "com.autoshorts.ai.config.AppProperties",
@@ -75,6 +93,12 @@
       "type": "com.autoshorts.ai.config.AppProperties$Cors",
       "sourceType": "com.autoshorts.ai.config.AppProperties$Web",
       "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Cors getCors() "
+    },
+    {
+      "name": "app.webhook",
+      "type": "com.autoshorts.ai.config.AppProperties$Webhook",
+      "sourceType": "com.autoshorts.ai.config.AppProperties",
+      "sourceMethod": "public com.autoshorts.ai.config.AppProperties.Webhook getWebhook() "
     }
   ],
   "properties": [
@@ -104,8 +128,18 @@
       "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
     },
     {
+      "name": "app.elevenlabs.default-model-id",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
+    },
+    {
       "name": "app.elevenlabs.default-voice-id",
       "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
+    },
+    {
+      "name": "app.elevenlabs.enabled",
+      "type": "java.lang.Boolean",
       "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
     },
     {
@@ -116,6 +150,16 @@
     {
       "name": "app.elevenlabs.model-id",
       "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
+    },
+    {
+      "name": "app.elevenlabs.output-format",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
+    },
+    {
+      "name": "app.elevenlabs.request-timeout-ms",
+      "type": "java.lang.Long",
       "sourceType": "com.autoshorts.ai.config.AppProperties$ElevenLabs"
     },
     {
@@ -147,6 +191,31 @@
       "name": "app.openai.model",
       "type": "java.lang.String",
       "sourceType": "com.autoshorts.ai.config.AppProperties$OpenAi"
+    },
+    {
+      "name": "app.publish.default-platform",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Publish"
+    },
+    {
+      "name": "app.publish.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Publish"
+    },
+    {
+      "name": "app.publish.mock-failure-keyword",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Publish"
+    },
+    {
+      "name": "app.publish.mock-latency-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Publish"
+    },
+    {
+      "name": "app.publish.provider",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Publish"
     },
     {
       "name": "app.queue.consumer-concurrency",
@@ -279,6 +348,11 @@
       "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
     },
     {
+      "name": "app.storage.local-public-base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
       "name": "app.storage.mock",
       "type": "java.lang.Boolean",
       "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
@@ -302,6 +376,71 @@
       "name": "app.storage.secret-key",
       "type": "java.lang.String",
       "sourceType": "com.autoshorts.ai.config.AppProperties$Storage"
+    },
+    {
+      "name": "app.tiktok.api-base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$TikTok"
+    },
+    {
+      "name": "app.tiktok.client-key",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$TikTok"
+    },
+    {
+      "name": "app.tiktok.client-secret",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$TikTok"
+    },
+    {
+      "name": "app.tiktok.redirect-uri",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$TikTok"
+    },
+    {
+      "name": "app.tiktok.scopes",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$TikTok"
+    },
+    {
+      "name": "app.tiktok.webhook-verify-token",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$TikTok"
+    },
+    {
+      "name": "app.visual.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Visual"
+    },
+    {
+      "name": "app.visual.max-scenes",
+      "type": "java.lang.Integer",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Visual"
+    },
+    {
+      "name": "app.visual.mock",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Visual"
+    },
+    {
+      "name": "app.visual.model",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Visual"
+    },
+    {
+      "name": "app.visual.provider",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Visual"
+    },
+    {
+      "name": "app.visual.request-timeout-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Visual"
+    },
+    {
+      "name": "app.visual.size",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Visual"
     },
     {
       "name": "app.web.cors.allow-credentials",
@@ -332,6 +471,51 @@
       "name": "app.web.cors.max-age-seconds",
       "type": "java.lang.Long",
       "sourceType": "com.autoshorts.ai.config.AppProperties$Cors"
+    },
+    {
+      "name": "app.webhook.dispatch-batch-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Webhook"
+    },
+    {
+      "name": "app.webhook.dispatch-fixed-delay-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Webhook"
+    },
+    {
+      "name": "app.webhook.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Webhook"
+    },
+    {
+      "name": "app.webhook.endpoint-url",
+      "type": "java.lang.String",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Webhook"
+    },
+    {
+      "name": "app.webhook.max-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Webhook"
+    },
+    {
+      "name": "app.webhook.request-timeout-seconds",
+      "type": "java.lang.Integer",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Webhook"
+    },
+    {
+      "name": "app.webhook.retry-initial-delay-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Webhook"
+    },
+    {
+      "name": "app.webhook.retry-max-delay-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Webhook"
+    },
+    {
+      "name": "app.webhook.retry-multiplier",
+      "type": "java.lang.Double",
+      "sourceType": "com.autoshorts.ai.config.AppProperties$Webhook"
     },
     {
       "name": "app.working-dir",
