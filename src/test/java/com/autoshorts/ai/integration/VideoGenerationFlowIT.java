@@ -109,7 +109,11 @@ class VideoGenerationFlowIT extends IntegrationTestBase {
         UUID jobId = submitGenerate(session, "Retry flow through failed composition", "motivation", 27, null);
         VideoJob failed = awaitJobStatus(jobId, JobStatus.FAILED, Duration.ofSeconds(40));
         assertThat(failed.getCurrentStep()).isEqualTo(GenerationStep.VIDEO_COMPOSITION);
+        assertThat(failed.getErrorMessage()).contains("Video composition failed");
+        assertThat(failed.getErrorMessage()).contains("ffmpeg failure on first attempt");
         assertThat(failed.getStepErrorDetails()).contains("step=VIDEO_COMPOSITION");
+        assertThat(failed.getStepErrorDetails()).contains("userMessage=Video composition failed");
+        assertThat(failed.getStepErrorDetails()).contains("occurredAt=");
         assertThat(failed.getAttemptCount()).isEqualTo(1);
 
         JsonNode retryResponse = postJson("/api/videos/" + jobId + "/retry", Map.of(), session.token(), 202);

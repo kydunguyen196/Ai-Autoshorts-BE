@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Collection;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
+import java.time.Instant;
 import java.util.UUID;
 
 public interface VideoJobRepository extends JpaRepository<VideoJob, UUID> {
@@ -72,4 +73,8 @@ public interface VideoJobRepository extends JpaRepository<VideoJob, UUID> {
         UUID channelId,
         Collection<JobStatus> statuses
     );
+
+    List<VideoJob> findByStatusAndUpdatedAtBefore(JobStatus status, Instant updatedBefore, Pageable pageable);
+
+    List<VideoJob> findByStatusAndCreatedAtBefore(JobStatus status, Instant createdBefore, Pageable pageable);
 }

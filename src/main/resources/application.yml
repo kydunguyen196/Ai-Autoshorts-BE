@@ -114,6 +114,10 @@ app:
     retry-initial-interval-ms: ${APP_QUEUE_RETRY_INITIAL_INTERVAL_MS:2000}
     retry-multiplier: ${APP_QUEUE_RETRY_MULTIPLIER:2.0}
     retry-max-interval-ms: ${APP_QUEUE_RETRY_MAX_INTERVAL_MS:10000}
+    recovery-enabled: ${APP_QUEUE_RECOVERY_ENABLED:true}
+    stuck-processing-timeout-minutes: ${APP_QUEUE_STUCK_PROCESSING_TIMEOUT_MINUTES:30}
+    pending-redispatch-delay-minutes: ${APP_QUEUE_PENDING_REDISPATCH_DELAY_MINUTES:5}
+    recovery-batch-size: ${APP_QUEUE_RECOVERY_BATCH_SIZE:50}
   publish:
     enabled: ${APP_PUBLISH_ENABLED:true}
     provider: ${APP_PUBLISH_PROVIDER:mock}

@@ -10,6 +10,7 @@ import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.integration.support.IntegrationTestBase;
 import com.autoshorts.ai.integration.support.IntegrationTestConfiguration;
 import com.autoshorts.ai.queue.VideoGenerationJobMessage;
+import com.autoshorts.ai.orchestration.VideoJobRecoveryService;
 import com.autoshorts.ai.queue.VideoJobQueuePublisher;
 import com.autoshorts.ai.service.TopicAutomationService;
 import com.autoshorts.ai.service.VideoJobService;
@@ -25,6 +26,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -55,6 +57,9 @@ class QueueExecutionIT extends IntegrationTestBase {
 
     @Autowired
     private TopicAutomationService topicAutomationService;
+
+    @Autowired
+    private VideoJobRecoveryService videoJobRecoveryService;
 
     @SpyBean
     private VideoJobQueuePublisher queuePublisherSpy;
@@ -117,6 +122,73 @@ class QueueExecutionIT extends IntegrationTestBase {
         assertThat(completed.getAttemptCount()).isEqualTo(1);
         assertThat(completed.getCurrentStep()).isEqualTo(GenerationStep.COMPLETED);
         assertThat(completed.getFinalVideoUrl()).isNotBlank();
+    }
+
+    @Test
+    void shouldRedispatchOrphanedPendingJobsDuringStartupRecovery() throws Exception {
+        AuthSession session = registerUser("queue-recovery-pending");
+        pauseQueueConsumers();
+        UUID jobId = null;
+
+        try {
+            GenerateVideoRequest request = new GenerateVideoRequest();
+            request.setTopic("Orphaned pending recovery");
+            request.setStyle("facts");
+            request.setDurationSeconds(24);
+            request.setChannelId(session.defaultChannelId());
+            request.setVariantCount(1);
+            VideoJobResponse created = videoJobService.createPendingJob(request, session.userId(), session.defaultChannelId());
+            jobId = created.getJobId();
+
+            Instant oldTimestamp = Instant.now().minus(Duration.ofMinutes(appProperties.getQueue().getPendingRedispatchDelayMinutes() + 1));
+            jdbcTemplate.update(
+                "UPDATE video_jobs SET created_at = ?, updated_at = ? WHERE id = ?",
+                Timestamp.from(oldTimestamp),
+                Timestamp.from(oldTimestamp),
+                jobId
+            );
+
+            VideoJobRecoveryService.RecoverySummary summary = videoJobRecoveryService.recoverOrphanedJobs(Instant.now());
+
+            assertThat(summary.pendingRedispatched()).isEqualTo(1);
+            assertThat(summary.pendingRedispatchFailed()).isZero();
+            verify(queuePublisherSpy, atLeastOnce()).publish(eq(jobId), eq("startup_recovery"));
+            assertThat(queueMessageCount(appProperties.getQueue().getQueue())).isGreaterThanOrEqualTo(1L);
+        } finally {
+            resumeQueueConsumers();
+        }
+
+        if (jobId != null) {
+            awaitJobStatus(jobId, JobStatus.COMPLETED, Duration.ofSeconds(40));
+        }
+    }
+
+    @Test
+    void shouldFailStaleProcessingJobsDuringStartupRecovery() throws Exception {
+        AuthSession session = registerUser("queue-recovery-processing");
+        GenerateVideoRequest request = new GenerateVideoRequest();
+        request.setTopic("Stale processing recovery");
+        request.setStyle("storytelling");
+        request.setDurationSeconds(24);
+        request.setChannelId(session.defaultChannelId());
+        request.setVariantCount(1);
+        VideoJobResponse created = videoJobService.createPendingJob(request, session.userId(), session.defaultChannelId());
+
+        videoJobService.startProcessing(created.getJobId());
+        Instant oldTimestamp = Instant.now().minus(Duration.ofMinutes(appProperties.getQueue().getStuckProcessingTimeoutMinutes() + 1));
+        jdbcTemplate.update(
+            "UPDATE video_jobs SET updated_at = ? WHERE id = ?",
+            Timestamp.from(oldTimestamp),
+            created.getJobId()
+        );
+
+        VideoJobRecoveryService.RecoverySummary summary = videoJobRecoveryService.recoverOrphanedJobs(Instant.now());
+
+        assertThat(summary.staleProcessingFailed()).isEqualTo(1);
+        VideoJob failed = videoJobRepository.findById(created.getJobId()).orElseThrow();
+        assertThat(failed.getStatus()).isEqualTo(JobStatus.FAILED);
+        assertThat(failed.getErrorMessage()).contains("restart recovery window");
+        assertThat(failed.getStepErrorDetails()).contains("status=PROCESSING");
     }
 
     @Test

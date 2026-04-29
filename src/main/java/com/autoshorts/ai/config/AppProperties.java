@@ -708,6 +708,18 @@ public class AppProperties {
         @Min(100)
         private long retryMaxIntervalMs = 10_000;
 
+        private boolean recoveryEnabled = true;
+
+        @Min(1)
+        private long stuckProcessingTimeoutMinutes = 30;
+
+        @Min(1)
+        private long pendingRedispatchDelayMinutes = 5;
+
+        @Min(1)
+        @Max(500)
+        private int recoveryBatchSize = 50;
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -802,6 +814,38 @@ public class AppProperties {
 
         public void setRetryMaxIntervalMs(long retryMaxIntervalMs) {
             this.retryMaxIntervalMs = retryMaxIntervalMs;
+        }
+
+        public boolean isRecoveryEnabled() {
+            return recoveryEnabled;
+        }
+
+        public void setRecoveryEnabled(boolean recoveryEnabled) {
+            this.recoveryEnabled = recoveryEnabled;
+        }
+
+        public long getStuckProcessingTimeoutMinutes() {
+            return stuckProcessingTimeoutMinutes;
+        }
+
+        public void setStuckProcessingTimeoutMinutes(long stuckProcessingTimeoutMinutes) {
+            this.stuckProcessingTimeoutMinutes = stuckProcessingTimeoutMinutes;
+        }
+
+        public long getPendingRedispatchDelayMinutes() {
+            return pendingRedispatchDelayMinutes;
+        }
+
+        public void setPendingRedispatchDelayMinutes(long pendingRedispatchDelayMinutes) {
+            this.pendingRedispatchDelayMinutes = pendingRedispatchDelayMinutes;
+        }
+
+        public int getRecoveryBatchSize() {
+            return recoveryBatchSize;
+        }
+
+        public void setRecoveryBatchSize(int recoveryBatchSize) {
+            this.recoveryBatchSize = recoveryBatchSize;
         }
     }
 

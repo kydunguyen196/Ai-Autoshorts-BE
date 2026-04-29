@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -172,10 +173,11 @@ public class VideoGenerationOrchestrator {
             log.info("event=job_completed jobId={} finalVideoUrl={}", jobId, finalVideoUrl);
             success = true;
         } catch (Exception ex) {
-            log.error("event=job_failed jobId={} message={}", jobId, ex.getMessage(), ex);
-            String stepDetails = buildStepErrorDetails(currentStep, ex);
+            log.error("event=job_failed jobId={} step={} message={}", jobId, currentStep, ex.getMessage(), ex);
+            String userFacingMessage = buildUserFacingErrorMessage(currentStep, ex);
+            String stepDetails = buildStepErrorDetails(currentStep, userFacingMessage, ex);
             try {
-                VideoJob failedJob = videoJobService.markFailed(jobId, currentStep, truncate(ex.getMessage(), 500), truncate(stepDetails, 8000));
+                VideoJob failedJob = videoJobService.markFailed(jobId, currentStep, truncate(userFacingMessage, 500), truncate(stepDetails, 8000));
                 emitWebhookSafely(WebhookEventType.JOB_FAILED, failedJob);
             } catch (Exception markFailedEx) {
                 log.error("event=job_mark_failed_error jobId={} message={}", jobId, markFailedEx.getMessage(), markFailedEx);
@@ -280,11 +282,42 @@ public class VideoGenerationOrchestrator {
         }
     }
 
-    private String buildStepErrorDetails(GenerationStep step, Exception ex) {
+    private String buildUserFacingErrorMessage(GenerationStep step, Exception ex) {
+        String rootCause = rootCauseMessage(ex);
+        String stepLabel = stepLabel(step);
+        if (rootCause == null || rootCause.isBlank()) {
+            return stepLabel + " failed. Please retry the job or check service logs if it fails again.";
+        }
+        return stepLabel + " failed: " + rootCause;
+    }
+
+    private String stepLabel(GenerationStep step) {
+        if (step == null) {
+            return "Video generation";
+        }
+        return switch (step) {
+            case QUEUED -> "Queue handoff";
+            case CONTENT_PREPARATION, SCRIPT_GENERATION -> "Script/content generation";
+            case AUDIO_SYNTHESIS -> "Audio synthesis";
+            case SUBTITLE_GENERATION -> "Subtitle generation";
+            case VISUAL_ASSET_GENERATION -> "Visual asset generation";
+            case VIDEO_COMPOSITION -> "Video composition";
+            case COMPLETED -> "Completion finalization";
+        };
+    }
+
+    private String buildStepErrorDetails(GenerationStep step, String userFacingMessage, Exception ex) {
         StringBuilder sb = new StringBuilder();
+        sb.append("occurredAt=").append(Instant.now()).append('\n');
         sb.append("step=").append(step).append('\n');
+        sb.append("userMessage=").append(userFacingMessage).append('\n');
         sb.append("exception=").append(ex.getClass().getName()).append('\n');
-        sb.append("message=").append(ex.getMessage()).append('\n');
+        sb.append("message=").append(nullSafe(ex.getMessage())).append('\n');
+        Throwable rootCause = rootCause(ex);
+        if (rootCause != ex) {
+            sb.append("rootCauseException=").append(rootCause.getClass().getName()).append('\n');
+            sb.append("rootCauseMessage=").append(nullSafe(rootCause.getMessage())).append('\n');
+        }
         sb.append("stacktrace=").append('\n');
         StackTraceElement[] trace = ex.getStackTrace();
         int maxLines = Math.min(trace.length, 20);
@@ -292,6 +325,22 @@ public class VideoGenerationOrchestrator {
             sb.append("  at ").append(trace[i]).append('\n');
         }
         return sb.toString();
+    }
+
+    private Throwable rootCause(Throwable throwable) {
+        Throwable cursor = throwable;
+        while (cursor.getCause() != null && cursor.getCause() != cursor) {
+            cursor = cursor.getCause();
+        }
+        return cursor;
+    }
+
+    private String rootCauseMessage(Throwable throwable) {
+        return nullSafe(rootCause(throwable).getMessage());
+    }
+
+    private String nullSafe(String value) {
+        return value == null ? "Unknown error" : value;
     }
 
     private String truncate(String value, int maxLength) {
