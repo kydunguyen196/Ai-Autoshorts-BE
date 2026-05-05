@@ -47,6 +47,27 @@ public class BatchGenerateRequest {
     @Size(max = 64, message = "defaultCharacterConsistencyMode must be <= 64 characters")
     private String defaultCharacterConsistencyMode;
 
+    @Size(max = 80, message = "defaultNiche must be <= 80 characters")
+    private String defaultNiche = "affiliate";
+
+    @Size(max = 50, message = "defaultPlatform must be <= 50 characters")
+    private String defaultPlatform = "tiktok";
+
+    @Size(max = 80, message = "defaultSubtitleStyle must be <= 80 characters")
+    private String defaultSubtitleStyle = "tiktok-bold";
+
+    @Size(max = 80, message = "defaultVisualMode must be <= 80 characters")
+    private String defaultVisualMode = "ai-scenes";
+
+    @Size(max = 80, message = "defaultVoiceProvider must be <= 80 characters")
+    private String defaultVoiceProvider;
+
+    @Size(max = 120, message = "defaultVoicePersona must be <= 120 characters")
+    private String defaultVoicePersona = "energetic-creator";
+
+    @Size(max = 80, message = "defaultQualityPreset must be <= 80 characters")
+    private String defaultQualityPreset = "viral-faceless";
+
     @Min(value = 10, message = "defaultDurationSeconds must be >= 10")
     @Max(value = 120, message = "defaultDurationSeconds must be <= 120")
     private Integer defaultDurationSeconds = 30;
@@ -149,6 +170,62 @@ public class BatchGenerateRequest {
 
     public void setDefaultCharacterConsistencyMode(String defaultCharacterConsistencyMode) {
         this.defaultCharacterConsistencyMode = defaultCharacterConsistencyMode;
+    }
+
+    public String getDefaultNiche() {
+        return defaultNiche;
+    }
+
+    public void setDefaultNiche(String defaultNiche) {
+        this.defaultNiche = defaultNiche;
+    }
+
+    public String getDefaultPlatform() {
+        return defaultPlatform;
+    }
+
+    public void setDefaultPlatform(String defaultPlatform) {
+        this.defaultPlatform = defaultPlatform;
+    }
+
+    public String getDefaultSubtitleStyle() {
+        return defaultSubtitleStyle;
+    }
+
+    public void setDefaultSubtitleStyle(String defaultSubtitleStyle) {
+        this.defaultSubtitleStyle = defaultSubtitleStyle;
+    }
+
+    public String getDefaultVisualMode() {
+        return defaultVisualMode;
+    }
+
+    public void setDefaultVisualMode(String defaultVisualMode) {
+        this.defaultVisualMode = defaultVisualMode;
+    }
+
+    public String getDefaultVoiceProvider() {
+        return defaultVoiceProvider;
+    }
+
+    public void setDefaultVoiceProvider(String defaultVoiceProvider) {
+        this.defaultVoiceProvider = defaultVoiceProvider;
+    }
+
+    public String getDefaultVoicePersona() {
+        return defaultVoicePersona;
+    }
+
+    public void setDefaultVoicePersona(String defaultVoicePersona) {
+        this.defaultVoicePersona = defaultVoicePersona;
+    }
+
+    public String getDefaultQualityPreset() {
+        return defaultQualityPreset;
+    }
+
+    public void setDefaultQualityPreset(String defaultQualityPreset) {
+        this.defaultQualityPreset = defaultQualityPreset;
     }
 
     public Integer getDefaultDurationSeconds() {

@@ -121,6 +121,27 @@ public class VideoJob {
     @Column(name = "character_consistency_mode", length = 64)
     private String characterConsistencyMode;
 
+    @Column(name = "niche", length = 80)
+    private String niche;
+
+    @Column(name = "platform", length = 50)
+    private String platform;
+
+    @Column(name = "subtitle_style", length = 80)
+    private String subtitleStyle;
+
+    @Column(name = "visual_mode", length = 80)
+    private String visualMode;
+
+    @Column(name = "voice_provider", length = 80)
+    private String voiceProvider;
+
+    @Column(name = "voice_persona", length = 120)
+    private String voicePersona;
+
+    @Column(name = "quality_preset", length = 80)
+    private String qualityPreset;
+
     @Column(name = "variant_index")
     private Integer variantIndex;
 
@@ -203,6 +224,16 @@ public class VideoJob {
 
     @Column(name = "publish_last_error_at")
     private Instant publishLastErrorAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "export_status", length = 32, nullable = false)
+    private ExportStatus exportStatus = ExportStatus.NOT_READY;
+
+    @Column(name = "download_url", columnDefinition = "TEXT")
+    private String downloadUrl;
+
+    @Column(name = "estimated_cost_credits")
+    private Integer estimatedCostCredits;
 
     @Column(name = "audio_url", columnDefinition = "TEXT")
     private String audioUrl;
@@ -572,6 +603,62 @@ public class VideoJob {
         this.characterConsistencyMode = characterConsistencyMode;
     }
 
+    public String getNiche() {
+        return niche;
+    }
+
+    public void setNiche(String niche) {
+        this.niche = niche;
+    }
+
+    public String getPlatform() {
+        return platform;
+    }
+
+    public void setPlatform(String platform) {
+        this.platform = platform;
+    }
+
+    public String getSubtitleStyle() {
+        return subtitleStyle;
+    }
+
+    public void setSubtitleStyle(String subtitleStyle) {
+        this.subtitleStyle = subtitleStyle;
+    }
+
+    public String getVisualMode() {
+        return visualMode;
+    }
+
+    public void setVisualMode(String visualMode) {
+        this.visualMode = visualMode;
+    }
+
+    public String getVoiceProvider() {
+        return voiceProvider;
+    }
+
+    public void setVoiceProvider(String voiceProvider) {
+        this.voiceProvider = voiceProvider;
+    }
+
+    public String getVoicePersona() {
+        return voicePersona;
+    }
+
+    public void setVoicePersona(String voicePersona) {
+        this.voicePersona = voicePersona;
+    }
+
+    public String getQualityPreset() {
+        return qualityPreset;
+    }
+
+    public void setQualityPreset(String qualityPreset) {
+        this.qualityPreset = qualityPreset;
+    }
+
     public Integer getVariantIndex() {
         return variantIndex;
     }
@@ -786,6 +873,30 @@ public class VideoJob {
 
     public void setPublishLastErrorAt(Instant publishLastErrorAt) {
         this.publishLastErrorAt = publishLastErrorAt;
+    }
+
+    public ExportStatus getExportStatus() {
+        return exportStatus;
+    }
+
+    public void setExportStatus(ExportStatus exportStatus) {
+        this.exportStatus = exportStatus;
+    }
+
+    public String getDownloadUrl() {
+        return downloadUrl;
+    }
+
+    public void setDownloadUrl(String downloadUrl) {
+        this.downloadUrl = downloadUrl;
+    }
+
+    public Integer getEstimatedCostCredits() {
+        return estimatedCostCredits;
+    }
+
+    public void setEstimatedCostCredits(Integer estimatedCostCredits) {
+        this.estimatedCostCredits = estimatedCostCredits;
     }
 
     public String getAudioUrl() {

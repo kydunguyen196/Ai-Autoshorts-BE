@@ -47,6 +47,9 @@ public class WebClientAiClient implements AiClient {
         if (temperature != null) {
             request.put("temperature", temperature);
         }
+        if (expectsJsonResponse(systemPrompt, userPrompt)) {
+            request.put("response_format", Map.of("type", "json_object"));
+        }
 
         ChatCompletionResponse response = post(
             resolvePath("/chat/completions"),
@@ -113,14 +116,18 @@ public class WebClientAiClient implements AiClient {
         validateApiKey();
 
         String resolvedModel = resolveSpeechModel(model);
-        String resolvedVoice = resolveSpeechVoice(voice);
+        String resolvedVoice = resolveSpeechVoice(voice, resolvedModel);
         String resolvedFormat = resolveSpeechResponseFormat(responseFormat);
 
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("model", resolvedModel);
         request.put("input", safeText(input));
-        request.put("voice", resolvedVoice);
-        request.put("response_format", resolvedFormat);
+        if (StringUtils.hasText(resolvedVoice)) {
+            request.put("voice", resolvedVoice);
+        }
+        if (StringUtils.hasText(resolvedFormat)) {
+            request.put("response_format", resolvedFormat);
+        }
 
         byte[] bytes = postBytes(resolvePath("/audio/speech"), request, "speech synthesis", resolveSpeechTimeout());
         if (bytes == null || bytes.length == 0) {
@@ -225,6 +232,13 @@ public class WebClientAiClient implements AiClient {
         }
     }
 
+    private boolean expectsJsonResponse(String systemPrompt, String userPrompt) {
+        String combined = (safeText(systemPrompt) + "\n" + safeText(userPrompt)).toLowerCase();
+        return combined.contains("return strictly valid json")
+            || combined.contains("json object")
+            || combined.contains("no markdown") && combined.contains("json");
+    }
+
     private void validateApiKey() {
         if (!StringUtils.hasText(appProperties.getOpenai().getApiKey())) {
             throw new ExternalServiceException("Missing AI API key. Set environment variable: apikey");
@@ -272,14 +286,21 @@ public class WebClientAiClient implements AiClient {
         throw new ExternalServiceException("Missing AI TTS model. Set environment variable: AI_TTS_MODEL");
     }
 
-    private String resolveSpeechVoice(String requestedVoice) {
+    private String resolveSpeechVoice(String requestedVoice, String resolvedModel) {
         if (StringUtils.hasText(requestedVoice)) {
             return requestedVoice.trim();
         }
         if (StringUtils.hasText(appProperties.getOpenai().getSpeechVoice())) {
             return appProperties.getOpenai().getSpeechVoice().trim();
         }
+        if (isGoogleTtsModel(resolvedModel)) {
+            return null;
+        }
         return "alloy";
+    }
+
+    private boolean isGoogleTtsModel(String model) {
+        return StringUtils.hasText(model) && model.trim().toLowerCase().startsWith("google-tts/");
     }
 
     private String resolveSpeechResponseFormat(String requestedFormat) {

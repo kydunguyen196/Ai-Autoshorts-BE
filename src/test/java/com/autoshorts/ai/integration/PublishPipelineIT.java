@@ -134,7 +134,7 @@ class PublishPipelineIT extends IntegrationTestBase {
     }
 
     @Test
-    void shouldPublishWithTikTokScaffoldWhenConnectionExists() throws Exception {
+    void shouldNotMarkTikTokScaffoldAsPublishedWhenConnectionExists() throws Exception {
         AuthSession session = registerUser("publish-tiktok-success");
         UUID jobId = submitGenerate(session, "TikTok publish success", "storytelling", 24, null);
         awaitJobStatus(jobId, JobStatus.COMPLETED, Duration.ofSeconds(40));
@@ -154,17 +154,17 @@ class PublishPipelineIT extends IntegrationTestBase {
             200
         );
 
-        JsonNode publishResponse = postJson(
+        postJson(
             "/api/videos/" + jobId + "/publish",
             Map.of("publishPlatform", "tiktok"),
             session.token(),
-            200
+            502
         );
 
-        assertThat(publishResponse.path("publishStatus").asText()).isEqualTo("PUBLISHED");
-        assertThat(publishResponse.path("publishProvider").asText()).isEqualTo("tiktok");
-        assertThat(publishResponse.path("publishExternalId").asText()).startsWith("tiktok-scaffold-");
-        assertThat(publishResponse.path("publishTargetAccountId").asText()).isEqualTo("acct-123");
-        assertThat(publishResponse.path("publishRequestPayloadJson").asText()).contains("post.direct.init");
+        JsonNode statusResponse = getJson("/api/videos/" + jobId + "/publish", session.token(), 200);
+        assertThat(statusResponse.path("publishStatus").asText()).isEqualTo("PUBLISH_FAILED");
+        assertThat(statusResponse.path("publishProvider").asText()).isEqualTo("tiktok");
+        assertThat(statusResponse.path("publishTargetAccountId").asText()).isEqualTo("acct-123");
+        assertThat(statusResponse.path("publishFailureReason").asText()).contains("scaffold mode");
     }
 }

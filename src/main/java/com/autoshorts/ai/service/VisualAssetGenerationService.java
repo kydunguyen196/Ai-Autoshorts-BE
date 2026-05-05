@@ -7,6 +7,7 @@ import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.entity.VisualGenerationMode;
 import com.autoshorts.ai.ffmpeg.SceneMediaSegment;
 import com.autoshorts.ai.storage.StorageClient;
+import com.autoshorts.ai.subtitles.NarrationTimelinePlanner;
 import com.autoshorts.ai.visual.DeterministicPreviewVisualGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,7 +51,7 @@ public class VisualAssetGenerationService {
         this.objectMapper = objectMapper;
     }
 
-    public GeneratedVisualAssets generateAndUploadSceneAssets(VideoJob job, Path jobDir) throws IOException {
+    public GeneratedVisualAssets generateAndUploadSceneAssets(VideoJob job, Path jobDir, int effectiveDurationSeconds) throws IOException {
         if (!appProperties.getVisual().isEnabled()) {
             log.info("event=visual_generation_skipped reason=disabled jobId={}", job.getId());
             return new GeneratedVisualAssets(
@@ -64,7 +65,7 @@ public class VisualAssetGenerationService {
             );
         }
 
-        List<ScenePlan> plans = buildScenePlans(job);
+        List<ScenePlan> plans = buildScenePlans(job, effectiveDurationSeconds);
         List<SceneMediaSegment> compositionSegments = new ArrayList<>();
         List<Map<String, Object>> sceneAssets = new ArrayList<>();
         List<GeneratedVisualImage> generated = new ArrayList<>();
@@ -113,19 +114,25 @@ public class VisualAssetGenerationService {
         );
     }
 
-    private List<ScenePlan> buildScenePlans(VideoJob job) {
+    private List<ScenePlan> buildScenePlans(VideoJob job, int effectiveDurationSeconds) {
         int maxScenes = Math.max(1, appProperties.getVisual().getMaxScenes());
         List<String> sceneDescriptions = extractSceneDescriptions(job.getSceneBreakdownJson());
         int inferredSceneCount = Math.max(2, Math.min(maxScenes, Math.max(1, job.getDurationSeconds() / 8)));
         int sceneCount = sceneDescriptions.isEmpty()
             ? inferredSceneCount
             : Math.max(1, Math.min(maxScenes, sceneDescriptions.size()));
-        int totalDuration = Math.max(5, job.getDurationSeconds());
+        int totalDuration = Math.max(5, effectiveDurationSeconds);
+        String narrationText = StringUtils.hasText(job.getScriptText()) ? job.getScriptText() : job.getTopic();
+        List<NarrationTimelinePlanner.Cue> cues = NarrationTimelinePlanner.buildCues(narrationText, totalDuration);
 
         List<ScenePlan> plans = new ArrayList<>();
+        int previousEndSec = 0;
         for (int index = 0; index < sceneCount; index++) {
-            int startSec = Math.max(0, (index * totalDuration) / sceneCount);
-            int endSec = Math.max(startSec + 1, ((index + 1) * totalDuration) / sceneCount);
+            int cueStartIndex = Math.min(cues.size() - 1, (index * cues.size()) / sceneCount);
+            int cueEndIndex = Math.min(cues.size() - 1, Math.max(cueStartIndex, ((index + 1) * cues.size()) / sceneCount - 1));
+            int startSec = Math.max(previousEndSec, (int) Math.floor(cues.get(cueStartIndex).startMs() / 1000.0d));
+            int endSec = (int) Math.ceil(cues.get(cueEndIndex).endMs() / 1000.0d);
+            endSec = Math.max(startSec + 1, endSec);
             if (index == sceneCount - 1) {
                 endSec = totalDuration;
             }
@@ -133,6 +140,7 @@ public class VisualAssetGenerationService {
                 ? sceneDescriptions.get(index)
                 : "story beat %d".formatted(index + 1);
             plans.add(new ScenePlan(index, startSec, endSec, description));
+            previousEndSec = endSec;
         }
         return plans;
     }
@@ -181,6 +189,18 @@ public class VisualAssetGenerationService {
         }
         if (StringUtils.hasText(job.getStyle())) {
             parts.add("Visual tone for style: " + sanitizePrompt(job.getStyle()));
+        }
+        if (StringUtils.hasText(job.getNiche())) {
+            parts.add("Creator niche: " + sanitizePrompt(job.getNiche()));
+        }
+        if (StringUtils.hasText(job.getPlatform())) {
+            parts.add("Optimized for " + sanitizePrompt(job.getPlatform()) + " vertical feed");
+        }
+        if (StringUtils.hasText(job.getVisualMode())) {
+            parts.add("Visual mode: " + sanitizePrompt(job.getVisualMode()));
+        }
+        if (StringUtils.hasText(job.getQualityPreset())) {
+            parts.add("Quality preset: " + sanitizePrompt(job.getQualityPreset()));
         }
         if (StringUtils.hasText(job.getProductPlacementMode())) {
             parts.add("Product placement: " + sanitizePrompt(job.getProductPlacementMode()));

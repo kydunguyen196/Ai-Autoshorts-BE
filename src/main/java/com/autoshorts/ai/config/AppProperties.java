@@ -56,6 +56,12 @@ public class AppProperties {
     private Webhook webhook = new Webhook();
 
     @NotNull
+    private Billing billing = new Billing();
+
+    @NotNull
+    private RateLimit rateLimit = new RateLimit();
+
+    @NotNull
     private Web web = new Web();
 
     public String getWorkingDir() {
@@ -168,6 +174,22 @@ public class AppProperties {
 
     public void setWebhook(Webhook webhook) {
         this.webhook = webhook;
+    }
+
+    public Billing getBilling() {
+        return billing;
+    }
+
+    public void setBilling(Billing billing) {
+        this.billing = billing;
+    }
+
+    public RateLimit getRateLimit() {
+        return rateLimit;
+    }
+
+    public void setRateLimit(RateLimit rateLimit) {
+        this.rateLimit = rateLimit;
     }
 
     public Web getWeb() {
@@ -1061,6 +1083,149 @@ public class AppProperties {
 
         public void setRequestTimeoutSeconds(int requestTimeoutSeconds) {
             this.requestTimeoutSeconds = requestTimeoutSeconds;
+        }
+    }
+
+    public static class Billing {
+
+        private boolean stripeEnabled;
+        private String stripeApiBaseUrl = "https://api.stripe.com";
+        private String stripeSecretKey;
+        private String stripeWebhookSecret;
+        private String successUrl = "http://localhost:3000/app/billing?checkout=success";
+        private String cancelUrl = "http://localhost:3000/app/billing?checkout=cancelled";
+        private String portalReturnUrl = "http://localhost:3000/app/billing";
+        private String starterPriceId;
+        private String proPriceId;
+        private String agencyPriceId;
+
+        public boolean isStripeEnabled() {
+            return stripeEnabled;
+        }
+
+        public void setStripeEnabled(boolean stripeEnabled) {
+            this.stripeEnabled = stripeEnabled;
+        }
+
+        public String getStripeApiBaseUrl() {
+            return stripeApiBaseUrl;
+        }
+
+        public void setStripeApiBaseUrl(String stripeApiBaseUrl) {
+            this.stripeApiBaseUrl = stripeApiBaseUrl;
+        }
+
+        public String getStripeSecretKey() {
+            return stripeSecretKey;
+        }
+
+        public void setStripeSecretKey(String stripeSecretKey) {
+            this.stripeSecretKey = stripeSecretKey;
+        }
+
+        public String getStripeWebhookSecret() {
+            return stripeWebhookSecret;
+        }
+
+        public void setStripeWebhookSecret(String stripeWebhookSecret) {
+            this.stripeWebhookSecret = stripeWebhookSecret;
+        }
+
+        public String getSuccessUrl() {
+            return successUrl;
+        }
+
+        public void setSuccessUrl(String successUrl) {
+            this.successUrl = successUrl;
+        }
+
+        public String getCancelUrl() {
+            return cancelUrl;
+        }
+
+        public void setCancelUrl(String cancelUrl) {
+            this.cancelUrl = cancelUrl;
+        }
+
+        public String getPortalReturnUrl() {
+            return portalReturnUrl;
+        }
+
+        public void setPortalReturnUrl(String portalReturnUrl) {
+            this.portalReturnUrl = portalReturnUrl;
+        }
+
+        public String getStarterPriceId() {
+            return starterPriceId;
+        }
+
+        public void setStarterPriceId(String starterPriceId) {
+            this.starterPriceId = starterPriceId;
+        }
+
+        public String getProPriceId() {
+            return proPriceId;
+        }
+
+        public void setProPriceId(String proPriceId) {
+            this.proPriceId = proPriceId;
+        }
+
+        public String getAgencyPriceId() {
+            return agencyPriceId;
+        }
+
+        public void setAgencyPriceId(String agencyPriceId) {
+            this.agencyPriceId = agencyPriceId;
+        }
+    }
+
+    public static class RateLimit {
+
+        private boolean enabled = true;
+
+        @Min(1)
+        @Max(10_000)
+        private int authPerMinute = 20;
+
+        @Min(1)
+        @Max(10_000)
+        private int generatePerMinute = 10;
+
+        @Min(1)
+        @Max(100_000)
+        private int defaultPerMinute = 300;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public int getAuthPerMinute() {
+            return authPerMinute;
+        }
+
+        public void setAuthPerMinute(int authPerMinute) {
+            this.authPerMinute = authPerMinute;
+        }
+
+        public int getGeneratePerMinute() {
+            return generatePerMinute;
+        }
+
+        public void setGeneratePerMinute(int generatePerMinute) {
+            this.generatePerMinute = generatePerMinute;
+        }
+
+        public int getDefaultPerMinute() {
+            return defaultPerMinute;
+        }
+
+        public void setDefaultPerMinute(int defaultPerMinute) {
+            this.defaultPerMinute = defaultPerMinute;
         }
     }
 

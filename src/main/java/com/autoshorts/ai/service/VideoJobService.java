@@ -7,6 +7,7 @@ import com.autoshorts.ai.dto.PagedResponse;
 import com.autoshorts.ai.dto.VideoJobResponse;
 import com.autoshorts.ai.entity.CharacterCampaign;
 import com.autoshorts.ai.entity.CharacterProfile;
+import com.autoshorts.ai.entity.ExportStatus;
 import com.autoshorts.ai.entity.GenerationStep;
 import com.autoshorts.ai.entity.JobStatus;
 import com.autoshorts.ai.entity.PublishStatus;
@@ -139,6 +140,16 @@ public class VideoJobService {
             job.setAdDisclosureMode(trimToNull(request.getAdDisclosureMode()));
             job.setSceneCountTarget(request.getSceneCountTarget());
             job.setCharacterConsistencyMode(trimToNull(request.getCharacterConsistencyMode()));
+            job.setNiche(firstNonBlank(request.getNiche(), "affiliate"));
+            job.setPlatform(firstNonBlank(request.getPlatform(), "tiktok"));
+            job.setSubtitleStyle(firstNonBlank(request.getSubtitleStyle(), "tiktok-bold"));
+            job.setVisualMode(firstNonBlank(request.getVisualMode(), "ai-scenes"));
+            job.setVoiceProvider(trimToNull(request.getVoiceProvider()));
+            job.setVoicePersona(firstNonBlank(request.getVoicePersona(), "energetic-creator"));
+            job.setQualityPreset(firstNonBlank(request.getQualityPreset(), "viral-faceless"));
+            job.setExportStatus(ExportStatus.NOT_READY);
+            job.setDownloadUrl(null);
+            job.setEstimatedCostCredits(estimateCostCredits(request));
             job.setVariantIndex(index);
             job.setVariantCount(variantCount);
             job.setRankingScore(null);
@@ -386,6 +397,22 @@ public class VideoJobService {
         return saved;
     }
 
+    @Transactional
+    public VideoJob markExportReadyForUser(UUID jobId, UUID userId) {
+        VideoJob job = getEntityForUserUpdateOrThrow(jobId, userId);
+        if (job.getStatus() != JobStatus.COMPLETED) {
+            throw new InvalidJobStateException("Only COMPLETED jobs can be exported");
+        }
+        if (!StringUtils.hasText(job.getFinalVideoUrl())) {
+            throw new InvalidJobStateException("Cannot export without a final video URL");
+        }
+        job.setExportStatus(ExportStatus.EXPORT_READY);
+        job.setDownloadUrl(job.getFinalVideoUrl());
+        VideoJob saved = saveAndCache(job);
+        log.info("event=job_export_ready jobId={} userId={} downloadUrl={}", saved.getId(), userId, saved.getDownloadUrl());
+        return saved;
+    }
+
     @Transactional(readOnly = true)
     public GenerationGroupReviewSummaryResponse getGroupReviewSummary(UUID userId, UUID generationGroupId) {
         List<VideoJob> jobs = videoJobRepository.findAllByUserIdAndGenerationGroupId(userId, generationGroupId);
@@ -498,6 +525,9 @@ public class VideoJobService {
         job.setPublishFailureDetails(null);
         job.setPublishLastErrorAt(null);
         job.setPublishLastStatusCheckAt(null);
+        job.setExportStatus(ExportStatus.NOT_READY);
+        job.setDownloadUrl(null);
+        job.setEstimatedCostCredits(estimateCostCredits(job));
         job.setStartedAt(null);
         job.setCompletedAt(null);
         job.setLastErrorAt(null);
@@ -529,6 +559,8 @@ public class VideoJobService {
             job.setStatus(JobStatus.COMPLETED);
             job.setCurrentStep(GenerationStep.COMPLETED);
             job.setFinalVideoUrl(finalVideoUrl);
+            job.setExportStatus(ExportStatus.EXPORT_READY);
+            job.setDownloadUrl(finalVideoUrl);
             job.setErrorMessage(null);
             job.setStepErrorDetails(null);
             if (job.getReviewStatus() == null || job.getReviewStatus() == ReviewStatus.DRAFT || job.getReviewStatus() == ReviewStatus.REJECTED) {
@@ -699,6 +731,45 @@ public class VideoJobService {
             return null;
         }
         return value.trim();
+    }
+
+    private String firstNonBlank(String value, String fallback) {
+        if (StringUtils.hasText(value)) {
+            return value.trim();
+        }
+        return fallback;
+    }
+
+    public int estimateCostCredits(GenerateVideoRequest request) {
+        int duration = request.getDurationSeconds() == null ? 30 : request.getDurationSeconds();
+        int cost = Math.max(1, (int) Math.ceil(duration / 30.0d));
+        if (isRealVisualMode(request.getVisualMode())) {
+            cost += 2;
+        }
+        if (StringUtils.hasText(request.getVoiceProvider()) && !"mock".equalsIgnoreCase(request.getVoiceProvider().trim())) {
+            cost += 1;
+        }
+        return Math.max(1, cost);
+    }
+
+    private int estimateCostCredits(VideoJob job) {
+        int duration = job.getDurationSeconds() == null ? 30 : job.getDurationSeconds();
+        int cost = Math.max(1, (int) Math.ceil(duration / 30.0d));
+        if (isRealVisualMode(job.getVisualMode())) {
+            cost += 2;
+        }
+        if (StringUtils.hasText(job.getVoiceProvider()) && !"mock".equalsIgnoreCase(job.getVoiceProvider().trim())) {
+            cost += 1;
+        }
+        return Math.max(1, cost);
+    }
+
+    private boolean isRealVisualMode(String visualMode) {
+        if (!StringUtils.hasText(visualMode)) {
+            return true;
+        }
+        String normalized = visualMode.trim().toLowerCase();
+        return normalized.contains("ai") || normalized.contains("real");
     }
 
     private record CharacterGenerationBinding(UUID characterProfileId, UUID characterCampaignId) {

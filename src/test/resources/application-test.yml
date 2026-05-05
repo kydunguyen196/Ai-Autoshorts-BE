@@ -67,3 +67,5 @@ app:
     api-base-url: https://open.tiktokapis.com
   webhook:
     enabled: false
+  rate-limit:
+    enabled: false

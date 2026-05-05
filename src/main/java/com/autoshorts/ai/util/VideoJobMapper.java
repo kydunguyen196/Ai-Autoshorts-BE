@@ -47,6 +47,13 @@ public final class VideoJobMapper {
         response.setAdDisclosureMode(job.getAdDisclosureMode());
         response.setSceneCountTarget(job.getSceneCountTarget());
         response.setCharacterConsistencyMode(job.getCharacterConsistencyMode());
+        response.setNiche(job.getNiche());
+        response.setPlatform(job.getPlatform());
+        response.setSubtitleStyle(job.getSubtitleStyle());
+        response.setVisualMode(job.getVisualMode());
+        response.setVoiceProvider(job.getVoiceProvider());
+        response.setVoicePersona(job.getVoicePersona());
+        response.setQualityPreset(job.getQualityPreset());
         response.setVariantIndex(job.getVariantIndex());
         response.setVariantCount(job.getVariantCount());
         response.setRankingScore(job.getRankingScore());
@@ -74,6 +81,9 @@ public final class VideoJobMapper {
         response.setPublishFailureDetails(job.getPublishFailureDetails());
         response.setPublishLastErrorAt(job.getPublishLastErrorAt());
         response.setPublishLastStatusCheckAt(job.getPublishLastStatusCheckAt());
+        response.setExportStatus(job.getExportStatus());
+        response.setDownloadUrl(job.getDownloadUrl());
+        response.setEstimatedCostCredits(job.getEstimatedCostCredits());
         response.setAudioUrl(job.getAudioUrl());
         response.setAudioGenerationMode(job.getAudioGenerationMode());
         response.setAudioProvider(job.getAudioProvider());
@@ -88,6 +98,7 @@ public final class VideoJobMapper {
         response.setVisualModelId(job.getVisualModelId());
         response.setVisualFailureReason(job.getVisualFailureReason());
         response.setVisualFailureDetails(job.getVisualFailureDetails());
+        response.setProviderModes(buildProviderModes(job));
         response.setSubtitleUrl(job.getSubtitleUrl());
         response.setFinalVideoUrl(job.getFinalVideoUrl());
         response.setErrorMessage(job.getErrorMessage());
@@ -134,5 +145,14 @@ public final class VideoJobMapper {
             .map(String::trim)
             .filter(s -> !s.isBlank())
             .toList();
+    }
+
+    private static String buildProviderModes(VideoJob job) {
+        return "content=%s,audio=%s,visual=%s,publish=%s".formatted(
+            job.getContentGenerationMode() == null ? "UNKNOWN" : job.getContentGenerationMode(),
+            job.getAudioGenerationMode() == null ? "UNKNOWN" : job.getAudioGenerationMode(),
+            job.getVisualGenerationMode() == null ? "UNKNOWN" : job.getVisualGenerationMode(),
+            job.getPublishProvider() == null ? "none" : job.getPublishProvider()
+        );
     }
 }

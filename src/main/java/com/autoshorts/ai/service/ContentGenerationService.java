@@ -89,10 +89,37 @@ public class ContentGenerationService {
 
     public GeneratedContent generateForJob(VideoJob job) {
         CharacterGenerationContext context = buildCharacterContext(job);
+        String commercialTopic = buildCommercialTopic(job);
         if (context == null || !context.hasAnyContext()) {
-            return generate(job.getTopic(), job.getStyle(), job.getDurationSeconds());
+            return generate(commercialTopic, job.getStyle(), job.getDurationSeconds());
         }
-        return generate(job.getTopic(), job.getStyle(), job.getDurationSeconds(), context);
+        return generate(commercialTopic, job.getStyle(), job.getDurationSeconds(), context);
+    }
+
+    private String buildCommercialTopic(VideoJob job) {
+        StringBuilder sb = new StringBuilder(job.getTopic());
+        appendCommercialField(sb, "target niche", job.getNiche());
+        appendCommercialField(sb, "platform", job.getPlatform());
+        appendCommercialField(sb, "quality preset", job.getQualityPreset());
+        appendCommercialField(sb, "subtitle style", job.getSubtitleStyle());
+        appendCommercialField(sb, "visual mode", job.getVisualMode());
+        appendCommercialField(sb, "voice persona", job.getVoicePersona());
+        if ("affiliate".equalsIgnoreCase(nullSafe(job.getNiche()))
+            || "viral-faceless".equalsIgnoreCase(nullSafe(job.getQualityPreset()))) {
+            sb.append("\nCommercial goal: create a faceless short that earns attention first, then makes the offer or affiliate angle feel useful rather than pushy.");
+            sb.append("\nRetention requirement: include a curiosity hook, three fast value beats, and a save/comment/follow CTA.");
+        }
+        return sb.toString();
+    }
+
+    private void appendCommercialField(StringBuilder sb, String label, String value) {
+        if (StringUtils.hasText(value)) {
+            sb.append("\n").append(label).append(": ").append(value.trim());
+        }
+    }
+
+    private String nullSafe(String value) {
+        return value == null ? "" : value;
     }
 
     public GeneratedContent generate(

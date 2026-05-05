@@ -32,6 +32,9 @@ public class TikTokVideoPublisher implements VideoPublisher {
         if (!StringUtils.hasText(request.finalVideoUrl())) {
             throw new ExternalServiceException("TikTok publish requires a final video URL");
         }
+        if (!Boolean.getBoolean("autoshorts.tiktok.direct.enabled")) {
+            throw new ExternalServiceException("TikTok direct publish is not enabled yet. Use the exported download URL while the TikTok API integration remains in scaffold mode.");
+        }
 
         Map<String, Object> creatorInfoQuery = new LinkedHashMap<>();
         creatorInfoQuery.put("operation", "creator.info.query");

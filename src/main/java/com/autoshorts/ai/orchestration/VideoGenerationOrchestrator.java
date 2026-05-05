@@ -7,6 +7,7 @@ import com.autoshorts.ai.config.AppProperties;
 import com.autoshorts.ai.entity.GenerationStep;
 import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.entity.WebhookEventType;
+import com.autoshorts.ai.ffmpeg.AudioDurationResolver;
 import com.autoshorts.ai.exception.InvalidJobStateException;
 import com.autoshorts.ai.ffmpeg.FfmpegVideoComposer;
 import com.autoshorts.ai.ffmpeg.SceneMediaSegment;
@@ -42,6 +43,7 @@ public class VideoGenerationOrchestrator {
     private final SubtitleGeneratorService subtitleGeneratorService;
     private final VisualAssetGenerationService visualAssetGenerationService;
     private final FfmpegVideoComposer ffmpegVideoComposer;
+    private final AudioDurationResolver audioDurationResolver;
     private final StorageClient storageClient;
     private final WebhookDeliveryService webhookDeliveryService;
     private final WorkingDirectoryManager workingDirectoryManager;
@@ -55,6 +57,7 @@ public class VideoGenerationOrchestrator {
         SubtitleGeneratorService subtitleGeneratorService,
         VisualAssetGenerationService visualAssetGenerationService,
         FfmpegVideoComposer ffmpegVideoComposer,
+        AudioDurationResolver audioDurationResolver,
         StorageClient storageClient,
         WebhookDeliveryService webhookDeliveryService,
         WorkingDirectoryManager workingDirectoryManager,
@@ -67,6 +70,7 @@ public class VideoGenerationOrchestrator {
         this.subtitleGeneratorService = subtitleGeneratorService;
         this.visualAssetGenerationService = visualAssetGenerationService;
         this.ffmpegVideoComposer = ffmpegVideoComposer;
+        this.audioDurationResolver = audioDurationResolver;
         this.storageClient = storageClient;
         this.webhookDeliveryService = webhookDeliveryService;
         this.workingDirectoryManager = workingDirectoryManager;
@@ -115,6 +119,7 @@ public class VideoGenerationOrchestrator {
                 current.setSceneBreakdownJson(generatedContent.sceneBreakdownJson());
             });
             job.setSceneBreakdownJson(generatedContent.sceneBreakdownJson());
+            job.setScriptText(generatedContent.scriptText());
             log.info(
                 "event=content_metadata_persisted jobId={} mode={} style={} templateId={} variantKey={} hookType={} ctaType={} structureType={} hookScore={} engagementScore={}",
                 jobId,
@@ -135,6 +140,7 @@ public class VideoGenerationOrchestrator {
 
             currentStep = GenerationStep.AUDIO_SYNTHESIS;
             AudioArtifact audioArtifact = runStep(jobId, currentStep, () -> synthesizeAndUploadAudio(job, script, activeJobDir));
+            int effectiveDurationSeconds = resolveEffectiveDurationSeconds(audioArtifact.audioPath(), job.getDurationSeconds());
             videoJobService.updateJob(jobId, current -> {
                 current.setAudioUrl(audioArtifact.audioUrl());
                 current.setAudioGenerationMode(audioArtifact.mode());
@@ -142,14 +148,18 @@ public class VideoGenerationOrchestrator {
             });
 
             currentStep = GenerationStep.SUBTITLE_GENERATION;
-            SubtitleArtifact subtitleArtifact = runStep(jobId, currentStep, () -> generateAndUploadSubtitles(job, script, activeJobDir));
+            SubtitleArtifact subtitleArtifact = runStep(
+                jobId,
+                currentStep,
+                () -> generateAndUploadSubtitles(job, script, activeJobDir, effectiveDurationSeconds)
+            );
             videoJobService.updateJob(jobId, current -> current.setSubtitleUrl(subtitleArtifact.subtitleUrl()));
 
             currentStep = GenerationStep.VISUAL_ASSET_GENERATION;
             VisualAssetGenerationService.GeneratedVisualAssets visualAssets = runStep(
                 jobId,
                 currentStep,
-                () -> visualAssetGenerationService.generateAndUploadSceneAssets(job, activeJobDir)
+                () -> visualAssetGenerationService.generateAndUploadSceneAssets(job, activeJobDir, effectiveDurationSeconds)
             );
             videoJobService.updateJob(jobId, current -> {
                 current.setSceneAssetsJson(visualAssets.sceneAssetsJson());
@@ -164,7 +174,14 @@ public class VideoGenerationOrchestrator {
             String finalVideoUrl = runStep(
                 jobId,
                 currentStep,
-                () -> composeAndUploadVideo(job, audioArtifact.audioPath(), subtitleArtifact.subtitlePath(), visualAssets.sceneSegments(), activeJobDir)
+                () -> composeAndUploadVideo(
+                    job,
+                    audioArtifact.audioPath(),
+                    subtitleArtifact.subtitlePath(),
+                    visualAssets.sceneSegments(),
+                    activeJobDir,
+                    effectiveDurationSeconds
+                )
             );
             VideoJob completedJob = videoJobService.markCompleted(jobId, finalVideoUrl);
             emitWebhookSafely(WebhookEventType.JOB_GENERATED, completedJob);
@@ -210,10 +227,15 @@ public class VideoGenerationOrchestrator {
         return new AudioArtifact(audioPath, audioUrl, audio.getGenerationMode(), audio.getProvider());
     }
 
-    private SubtitleArtifact generateAndUploadSubtitles(VideoJob job, String script, Path jobDir) {
+    private SubtitleArtifact generateAndUploadSubtitles(
+        VideoJob job,
+        String script,
+        Path jobDir,
+        int effectiveDurationSeconds
+    ) {
         log.info("event=step_generate_subtitles jobId={}", job.getId());
         Path subtitlePath = jobDir.resolve("subtitles.srt");
-        subtitleGeneratorService.generateSrt(script, job.getDurationSeconds(), subtitlePath);
+        subtitleGeneratorService.generateSrt(script, effectiveDurationSeconds, subtitlePath);
 
         String subtitleUrl = storageClient.upload(
             subtitlePath,
@@ -228,7 +250,8 @@ public class VideoGenerationOrchestrator {
         Path audioPath,
         Path subtitlePath,
         List<SceneMediaSegment> sceneSegments,
-        Path jobDir
+        Path jobDir,
+        int effectiveDurationSeconds
     ) {
         Path outputPath = jobDir.resolve("final.mp4");
         Path backgroundPath = resolveBackgroundPath();
@@ -238,13 +261,18 @@ public class VideoGenerationOrchestrator {
             audioPath,
             subtitlePath,
             outputPath,
-            job.getDurationSeconds(),
+            effectiveDurationSeconds,
             null,
             sceneSegments
         );
         ffmpegVideoComposer.compose(request);
 
         return storageClient.upload(outputPath, objectKey(job.getId(), "final.mp4"), "video/mp4");
+    }
+
+    private int resolveEffectiveDurationSeconds(Path audioPath, Integer fallbackDurationSeconds) {
+        int fallback = fallbackDurationSeconds == null ? 30 : fallbackDurationSeconds;
+        return audioDurationResolver.resolveDurationSeconds(audioPath, fallback);
     }
 
     private Path resolveBackgroundPath() {

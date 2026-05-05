@@ -2,6 +2,8 @@ package com.autoshorts.ai.orchestration;
 
 import com.autoshorts.ai.service.WebhookDeliveryService;
 import jakarta.annotation.PreDestroy;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -53,6 +55,11 @@ public class WebhookDeliveryScheduler {
 
     @PreDestroy
     public void onShutdown() {
+        shuttingDown = true;
+    }
+
+    @EventListener(ContextClosedEvent.class)
+    public void onContextClosed() {
         shuttingDown = true;
     }
 }

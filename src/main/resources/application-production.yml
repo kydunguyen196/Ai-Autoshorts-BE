@@ -1,0 +1,15 @@
+app:
+  openai:
+    mock: false
+  elevenlabs:
+    mock: false
+  visual:
+    mock: false
+  storage:
+    mock: false
+  publish:
+    provider: ${APP_PUBLISH_PROVIDER:mock}
+  billing:
+    stripe-enabled: ${STRIPE_ENABLED:true}
+  rate-limit:
+    enabled: ${APP_RATE_LIMIT_ENABLED:true}

@@ -199,9 +199,60 @@ public class BatchVideoGenerationService {
         request.setCharacterConsistencyMode(
             firstNonBlank(item.getCharacterConsistencyMode(), batch.getDefaultCharacterConsistencyMode(), null)
         );
+        request.setNiche(firstNonBlank(item.getNiche(), batch.getDefaultNiche(), "affiliate"));
+        request.setPlatform(firstNonBlank(item.getPlatform(), batch.getDefaultPlatform(), "tiktok"));
+        request.setSubtitleStyle(firstNonBlank(item.getSubtitleStyle(), batch.getDefaultSubtitleStyle(), "tiktok-bold"));
+        request.setVisualMode(firstNonBlank(item.getVisualMode(), batch.getDefaultVisualMode(), "ai-scenes"));
+        request.setVoiceProvider(firstNonBlank(item.getVoiceProvider(), batch.getDefaultVoiceProvider(), null));
+        request.setVoicePersona(firstNonBlank(item.getVoicePersona(), batch.getDefaultVoicePersona(), "energetic-creator"));
+        request.setQualityPreset(firstNonBlank(item.getQualityPreset(), batch.getDefaultQualityPreset(), "viral-faceless"));
         request.setDurationSeconds(item.getDurationSeconds() != null ? item.getDurationSeconds() : batch.getDefaultDurationSeconds());
         request.setVariantCount(item.getVariantCount() != null ? item.getVariantCount() : batch.getDefaultVariantCount());
         return request;
+    }
+
+    public int estimateRequestedCredits(BatchGenerateRequest request) {
+        int total = 0;
+        for (BatchGenerateItemRequest item : request.getItems()) {
+            GenerateVideoRequest single = toGenerateRequest(request, item);
+            int variantCount = normalizeVariantCount(single.getVariantCount());
+            total += estimateSingleCredits(single) * variantCount;
+        }
+        return Math.max(1, total);
+    }
+
+    public int estimateAcceptedCredits(BatchGenerateRequest request, BatchGenerateResponse response) {
+        int requestedCredits = estimateRequestedCredits(request);
+        int requestedVariants = response.getTotalVariantsRequested();
+        int acceptedVariants = response.getTotalAccepted();
+        if (acceptedVariants <= 0) {
+            return 0;
+        }
+        if (requestedVariants <= 0 || acceptedVariants >= requestedVariants) {
+            return requestedCredits;
+        }
+        return Math.max(1, (int) Math.ceil(requestedCredits * (acceptedVariants / (double) requestedVariants)));
+    }
+
+
+    private int estimateSingleCredits(GenerateVideoRequest request) {
+        int duration = request.getDurationSeconds() == null ? 30 : request.getDurationSeconds();
+        int cost = Math.max(1, (int) Math.ceil(duration / 30.0d));
+        if (isRealVisualMode(request.getVisualMode())) {
+            cost += 2;
+        }
+        if (StringUtils.hasText(request.getVoiceProvider()) && !"mock".equalsIgnoreCase(request.getVoiceProvider().trim())) {
+            cost += 1;
+        }
+        return Math.max(1, cost);
+    }
+
+    private boolean isRealVisualMode(String visualMode) {
+        if (!StringUtils.hasText(visualMode)) {
+            return true;
+        }
+        String normalized = visualMode.trim().toLowerCase(Locale.ROOT);
+        return normalized.contains("ai") || normalized.contains("real");
     }
 
     private String firstNonBlank(String first, String second, String fallback) {

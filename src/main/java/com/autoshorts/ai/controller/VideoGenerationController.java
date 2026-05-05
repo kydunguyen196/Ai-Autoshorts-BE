@@ -12,6 +12,7 @@ import com.autoshorts.ai.dto.VideoPublishStatusResponse;
 import com.autoshorts.ai.entity.JobStatus;
 import com.autoshorts.ai.entity.WebhookEventType;
 import com.autoshorts.ai.service.BatchVideoGenerationService;
+import com.autoshorts.ai.service.BillingService;
 import com.autoshorts.ai.service.CurrentUserService;
 import com.autoshorts.ai.service.VideoJobDispatchService;
 import com.autoshorts.ai.service.VideoPublishService;
@@ -46,6 +47,7 @@ public class VideoGenerationController {
     private final VideoJobService videoJobService;
     private final VideoJobDispatchService videoJobDispatchService;
     private final BatchVideoGenerationService batchVideoGenerationService;
+    private final BillingService billingService;
     private final VideoPublishService videoPublishService;
     private final CurrentUserService currentUserService;
     private final WebhookDeliveryService webhookDeliveryService;
@@ -54,6 +56,7 @@ public class VideoGenerationController {
         VideoJobService videoJobService,
         VideoJobDispatchService videoJobDispatchService,
         BatchVideoGenerationService batchVideoGenerationService,
+        BillingService billingService,
         VideoPublishService videoPublishService,
         CurrentUserService currentUserService,
         WebhookDeliveryService webhookDeliveryService
@@ -61,6 +64,7 @@ public class VideoGenerationController {
         this.videoJobService = videoJobService;
         this.videoJobDispatchService = videoJobDispatchService;
         this.batchVideoGenerationService = batchVideoGenerationService;
+        this.billingService = billingService;
         this.videoPublishService = videoPublishService;
         this.currentUserService = currentUserService;
         this.webhookDeliveryService = webhookDeliveryService;
@@ -69,7 +73,11 @@ public class VideoGenerationController {
     @PostMapping("/generate")
     public ResponseEntity<VideoJobResponse> generateVideo(@Valid @RequestBody GenerateVideoRequest request) {
         UUID userId = currentUserService.requireCurrentUserId();
+        int requiredCredits = videoJobService.estimateCostCredits(request) * Math.max(1, request.getVariantCount() == null ? 1 : request.getVariantCount());
+        billingService.assertHasCredits(userId, requiredCredits);
         List<VideoJobResponse> created = videoJobService.createPendingJobVariants(request, userId);
+        UUID referenceId = created.get(0).getGenerationGroupId() == null ? created.get(0).getJobId() : created.get(0).getGenerationGroupId();
+        billingService.debitCredits(userId, requiredCredits, "video_generation", referenceId);
 
         for (VideoJobResponse response : created) {
             try {
@@ -80,6 +88,7 @@ public class VideoGenerationController {
                 );
             } catch (Exception ex) {
                 if (created.size() == 1) {
+                    billingService.creditCredits(userId, requiredCredits, "video_generation_dispatch_refund", referenceId);
                     throw ex;
                 }
                 log.warn(
@@ -98,7 +107,14 @@ public class VideoGenerationController {
     @PostMapping("/batch-generate")
     public ResponseEntity<BatchGenerateResponse> batchGenerate(@Valid @RequestBody BatchGenerateRequest request) {
         UUID userId = currentUserService.requireCurrentUserId();
-        return ResponseEntity.accepted().body(batchVideoGenerationService.createBatch(request, userId));
+        int requiredCredits = batchVideoGenerationService.estimateRequestedCredits(request);
+        billingService.assertHasCredits(userId, requiredCredits);
+        BatchGenerateResponse response = batchVideoGenerationService.createBatch(request, userId);
+        if (response.getTotalAccepted() > 0) {
+            int acceptedCredits = batchVideoGenerationService.estimateAcceptedCredits(request, response);
+            billingService.debitCredits(userId, acceptedCredits, "batch_video_generation", response.getBatchId());
+        }
+        return ResponseEntity.accepted().body(response);
     }
 
     @GetMapping("/{jobId}")
@@ -212,6 +228,12 @@ public class VideoGenerationController {
         UUID userId = currentUserService.requireCurrentUserId();
         String publishPlatform = request == null ? null : request.getPublishPlatform();
         return ResponseEntity.ok(videoPublishService.publish(jobId, userId, publishPlatform));
+    }
+
+    @PostMapping("/{jobId}/export")
+    public ResponseEntity<VideoJobResponse> exportJob(@PathVariable UUID jobId) {
+        UUID userId = currentUserService.requireCurrentUserId();
+        return ResponseEntity.ok(VideoJobMapper.toResponse(videoJobService.markExportReadyForUser(jobId, userId)));
     }
 
     @GetMapping("/{jobId}/publish")

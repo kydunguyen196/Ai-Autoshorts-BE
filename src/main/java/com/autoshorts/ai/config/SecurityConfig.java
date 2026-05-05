@@ -1,6 +1,7 @@
 package com.autoshorts.ai.config;
 
 import com.autoshorts.ai.security.JwtAuthenticationFilter;
+import com.autoshorts.ai.security.RateLimitingFilter;
 import com.autoshorts.ai.security.RestAccessDeniedHandler;
 import com.autoshorts.ai.security.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +25,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
         HttpSecurity http,
         JwtAuthenticationFilter jwtAuthenticationFilter,
+        RateLimitingFilter rateLimitingFilter,
         RestAuthenticationEntryPoint authenticationEntryPoint,
         RestAccessDeniedHandler accessDeniedHandler
     ) throws Exception {
@@ -35,13 +37,20 @@ public class SecurityConfig {
                 .authenticationEntryPoint(authenticationEntryPoint)
                 .accessDeniedHandler(accessDeniedHandler)
             )
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; frame-ancestors 'none'"))
+                .referrerPolicy(referrer -> referrer.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000))
+                .frameOptions(frame -> frame.deny())
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/media/**").permitAll()
                 .requestMatchers(HttpMethod.HEAD, "/api/media/**").permitAll()
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/health", "/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/billing/webhook", "/api/health", "/actuator/health", "/actuator/info").permitAll()
                 .anyRequest().authenticated()
             )
+            .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

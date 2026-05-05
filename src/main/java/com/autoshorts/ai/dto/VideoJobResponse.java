@@ -3,6 +3,7 @@ package com.autoshorts.ai.dto;
 import com.autoshorts.ai.entity.JobStatus;
 import com.autoshorts.ai.entity.GenerationStep;
 import com.autoshorts.ai.entity.ContentGenerationMode;
+import com.autoshorts.ai.entity.ExportStatus;
 import com.autoshorts.ai.entity.PublishStatus;
 import com.autoshorts.ai.entity.AudioGenerationMode;
 import com.autoshorts.ai.entity.ReviewStatus;
@@ -47,6 +48,13 @@ public class VideoJobResponse {
     private String adDisclosureMode;
     private Integer sceneCountTarget;
     private String characterConsistencyMode;
+    private String niche;
+    private String platform;
+    private String subtitleStyle;
+    private String visualMode;
+    private String voiceProvider;
+    private String voicePersona;
+    private String qualityPreset;
     private Integer variantIndex;
     private Integer variantCount;
     private Integer rankingScore;
@@ -74,6 +82,10 @@ public class VideoJobResponse {
     private String publishFailureDetails;
     private Instant publishLastErrorAt;
     private Instant publishLastStatusCheckAt;
+    private ExportStatus exportStatus;
+    private String downloadUrl;
+    private String providerModes;
+    private Integer estimatedCostCredits;
     private String audioUrl;
     private AudioGenerationMode audioGenerationMode;
     private String audioProvider;
@@ -372,6 +384,62 @@ public class VideoJobResponse {
         this.characterConsistencyMode = characterConsistencyMode;
     }
 
+    public String getNiche() {
+        return niche;
+    }
+
+    public void setNiche(String niche) {
+        this.niche = niche;
+    }
+
+    public String getPlatform() {
+        return platform;
+    }
+
+    public void setPlatform(String platform) {
+        this.platform = platform;
+    }
+
+    public String getSubtitleStyle() {
+        return subtitleStyle;
+    }
+
+    public void setSubtitleStyle(String subtitleStyle) {
+        this.subtitleStyle = subtitleStyle;
+    }
+
+    public String getVisualMode() {
+        return visualMode;
+    }
+
+    public void setVisualMode(String visualMode) {
+        this.visualMode = visualMode;
+    }
+
+    public String getVoiceProvider() {
+        return voiceProvider;
+    }
+
+    public void setVoiceProvider(String voiceProvider) {
+        this.voiceProvider = voiceProvider;
+    }
+
+    public String getVoicePersona() {
+        return voicePersona;
+    }
+
+    public void setVoicePersona(String voicePersona) {
+        this.voicePersona = voicePersona;
+    }
+
+    public String getQualityPreset() {
+        return qualityPreset;
+    }
+
+    public void setQualityPreset(String qualityPreset) {
+        this.qualityPreset = qualityPreset;
+    }
+
     public Integer getVariantIndex() {
         return variantIndex;
     }
@@ -586,6 +654,38 @@ public class VideoJobResponse {
 
     public void setPublishLastStatusCheckAt(Instant publishLastStatusCheckAt) {
         this.publishLastStatusCheckAt = publishLastStatusCheckAt;
+    }
+
+    public ExportStatus getExportStatus() {
+        return exportStatus;
+    }
+
+    public void setExportStatus(ExportStatus exportStatus) {
+        this.exportStatus = exportStatus;
+    }
+
+    public String getDownloadUrl() {
+        return downloadUrl;
+    }
+
+    public void setDownloadUrl(String downloadUrl) {
+        this.downloadUrl = downloadUrl;
+    }
+
+    public String getProviderModes() {
+        return providerModes;
+    }
+
+    public void setProviderModes(String providerModes) {
+        this.providerModes = providerModes;
+    }
+
+    public Integer getEstimatedCostCredits() {
+        return estimatedCostCredits;
+    }
+
+    public void setEstimatedCostCredits(Integer estimatedCostCredits) {
+        this.estimatedCostCredits = estimatedCostCredits;
     }
 
     public String getSubtitleUrl() {
