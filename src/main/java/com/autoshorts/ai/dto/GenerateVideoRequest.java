@@ -75,6 +75,17 @@ public class GenerateVideoRequest {
     @Max(value = 10, message = "variantCount must be <= 10")
     private Integer variantCount = 1;
 
+    /** Internal: set by automation (e.g. news ingestion) to auto-publish on completion. */
+    private boolean autoPublish = false;
+
+    public boolean isAutoPublish() {
+        return autoPublish;
+    }
+
+    public void setAutoPublish(boolean autoPublish) {
+        this.autoPublish = autoPublish;
+    }
+
     public String getTopic() {
         return topic;
     }

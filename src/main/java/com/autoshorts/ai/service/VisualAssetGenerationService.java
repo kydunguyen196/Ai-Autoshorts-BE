@@ -5,6 +5,7 @@ import com.autoshorts.ai.client.model.GeneratedVisualImage;
 import com.autoshorts.ai.config.AppProperties;
 import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.entity.VisualGenerationMode;
+import com.autoshorts.ai.exception.ExternalServiceException;
 import com.autoshorts.ai.ffmpeg.SceneMediaSegment;
 import com.autoshorts.ai.storage.StorageClient;
 import com.autoshorts.ai.subtitles.NarrationTimelinePlanner;
@@ -73,6 +74,7 @@ public class VisualAssetGenerationService {
         for (ScenePlan plan : plans) {
             String prompt = buildVisualPrompt(job, plan);
             GeneratedVisualImage image = generateVisualSafely(prompt, plan.index());
+            validateGeneratedAssetForProvider(image);
             generated.add(image);
 
             String fileName = "scene-%02d.%s".formatted(plan.index() + 1, image.getFileExtension());
@@ -117,6 +119,13 @@ public class VisualAssetGenerationService {
     private List<ScenePlan> buildScenePlans(VideoJob job, int effectiveDurationSeconds) {
         int maxScenes = Math.max(1, appProperties.getVisual().getMaxScenes());
         List<String> sceneDescriptions = extractSceneDescriptions(job.getSceneBreakdownJson());
+        if (isTextToVideoProvider()) {
+            String description = sceneDescriptions.isEmpty()
+                ? "complete motion sequence for the full story"
+                : String.join("; ", sceneDescriptions);
+            return List.of(new ScenePlan(0, 0, Math.max(5, effectiveDurationSeconds), description));
+        }
+
         int inferredSceneCount = Math.max(2, Math.min(maxScenes, Math.max(1, job.getDurationSeconds() / 8)));
         int sceneCount = sceneDescriptions.isEmpty()
             ? inferredSceneCount
@@ -179,7 +188,9 @@ public class VisualAssetGenerationService {
 
     private String buildVisualPrompt(VideoJob job, ScenePlan plan) {
         List<String> parts = new ArrayList<>();
-        parts.add("Cinematic vertical 9:16 short-form video frame");
+        parts.add(isTextToVideoProvider()
+            ? "Cinematic vertical 9:16 short-form motion video, continuous camera movement, natural subject motion"
+            : "Cinematic vertical 9:16 short-form video frame");
         parts.add("Scene focus: " + plan.description());
         if (StringUtils.hasText(job.getTopic())) {
             parts.add("Topic context: " + sanitizePrompt(job.getTopic()));
@@ -205,7 +216,12 @@ public class VisualAssetGenerationService {
         if (StringUtils.hasText(job.getProductPlacementMode())) {
             parts.add("Product placement: " + sanitizePrompt(job.getProductPlacementMode()));
         }
-        parts.add("No text overlay, no watermark, high contrast subject, dynamic composition");
+        if (isTextToVideoProvider() && StringUtils.hasText(job.getScriptText())) {
+            parts.add("Narrative script context: " + sanitizePrompt(job.getScriptText()));
+        }
+        parts.add(isTextToVideoProvider()
+            ? "No text overlay, no watermark, no slideshow, no static image, smooth motion, cinematic lighting"
+            : "No text overlay, no watermark, high contrast subject, dynamic composition");
         return String.join(". ", parts) + ".";
     }
 
@@ -213,6 +229,13 @@ public class VisualAssetGenerationService {
         try {
             return visualGenerationClient.generateSceneImage(prompt, sceneIndex);
         } catch (Exception ex) {
+            if (isTextToVideoProvider()) {
+                throw new ExternalServiceException(
+                    "Hugging Face text-to-video failed; static image fallback is disabled for motion-video output: "
+                        + trimToLength(ex.getMessage(), 500),
+                    ex
+                );
+            }
             log.warn(
                 "event=visual_generation_fallback_triggered sceneIndex={} reason=provider_exception message={}",
                 sceneIndex,
@@ -223,6 +246,17 @@ public class VisualAssetGenerationService {
                 sceneIndex,
                 "provider_exception",
                 trimToLength(ex.getMessage(), 500)
+            );
+        }
+    }
+
+    private void validateGeneratedAssetForProvider(GeneratedVisualImage image) {
+        if (!isTextToVideoProvider()) {
+            return;
+        }
+        if (image == null || !isVideoAsset(image)) {
+            throw new ExternalServiceException(
+                "Hugging Face text-to-video provider returned a non-video asset; static image output is not allowed in motion-video mode"
             );
         }
     }
@@ -331,6 +365,18 @@ public class VisualAssetGenerationService {
 
     private String buildObjectKey(UUID jobId, String fileName) {
         return "jobs/" + jobId + "/scenes/" + fileName;
+    }
+
+    private boolean isTextToVideoProvider() {
+        String provider = appProperties.getVisual().getProvider();
+        return StringUtils.hasText(provider) && "huggingface-video".equalsIgnoreCase(provider.trim());
+    }
+
+    private boolean isVideoAsset(GeneratedVisualImage image) {
+        String contentType = image.getContentType();
+        String extension = image.getFileExtension();
+        return (StringUtils.hasText(contentType) && contentType.toLowerCase().startsWith("video/"))
+            || (StringUtils.hasText(extension) && List.of("mp4", "mov", "webm", "mkv").contains(extension.toLowerCase()));
     }
 
     private String trimToLength(String value, int maxLength) {

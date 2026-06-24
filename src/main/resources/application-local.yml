@@ -1,10 +1,10 @@
 app:
   openai:
-    mock: ${OPENAI_MOCK:true}
+    mock: ${OPENAI_MOCK:false}
   elevenlabs:
-    mock: ${ELEVENLABS_MOCK:true}
+    mock: ${ELEVENLABS_MOCK:false}
   visual:
-    mock: ${APP_VISUAL_MOCK:true}
+    mock: ${APP_VISUAL_MOCK:false}
   storage:
     mock: ${S3_MOCK:true}
   publish:

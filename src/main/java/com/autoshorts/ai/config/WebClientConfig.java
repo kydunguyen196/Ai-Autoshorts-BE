@@ -24,6 +24,7 @@ public class WebClientConfig {
                 .addHandlerLast(new WriteTimeoutHandler(60)));
 
         return WebClient.builder()
+            .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(20 * 1024 * 1024))
             .clientConnector(new ReactorClientHttpConnector(httpClient));
     }
 }

@@ -32,6 +32,9 @@ public class AppUser {
     @Column(nullable = false, length = 32)
     private UserRole role = UserRole.USER;
 
+    @Column(nullable = false)
+    private boolean enabled = true;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -96,6 +99,14 @@ public class AppUser {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     public Instant getCreatedAt() {

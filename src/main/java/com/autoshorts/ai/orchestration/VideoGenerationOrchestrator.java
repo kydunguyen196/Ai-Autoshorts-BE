@@ -5,6 +5,7 @@ import com.autoshorts.ai.client.ElevenLabsClient;
 import com.autoshorts.ai.client.model.SynthesizedAudio;
 import com.autoshorts.ai.config.AppProperties;
 import com.autoshorts.ai.entity.GenerationStep;
+import com.autoshorts.ai.entity.NotificationType;
 import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.entity.WebhookEventType;
 import com.autoshorts.ai.ffmpeg.AudioDurationResolver;
@@ -13,6 +14,8 @@ import com.autoshorts.ai.ffmpeg.FfmpegVideoComposer;
 import com.autoshorts.ai.ffmpeg.SceneMediaSegment;
 import com.autoshorts.ai.ffmpeg.VideoCompositionRequest;
 import com.autoshorts.ai.service.ContentGenerationService;
+import com.autoshorts.ai.service.NotificationService;
+import com.autoshorts.ai.service.VideoPublishService;
 import com.autoshorts.ai.service.VisualAssetGenerationService;
 import com.autoshorts.ai.service.VideoJobService;
 import com.autoshorts.ai.service.WebhookDeliveryService;
@@ -48,6 +51,8 @@ public class VideoGenerationOrchestrator {
     private final WebhookDeliveryService webhookDeliveryService;
     private final WorkingDirectoryManager workingDirectoryManager;
     private final AppProperties appProperties;
+    private final NotificationService notificationService;
+    private final VideoPublishService videoPublishService;
 
     public VideoGenerationOrchestrator(
         VideoJobService videoJobService,
@@ -61,7 +66,9 @@ public class VideoGenerationOrchestrator {
         StorageClient storageClient,
         WebhookDeliveryService webhookDeliveryService,
         WorkingDirectoryManager workingDirectoryManager,
-        AppProperties appProperties
+        AppProperties appProperties,
+        NotificationService notificationService,
+        VideoPublishService videoPublishService
     ) {
         this.videoJobService = videoJobService;
         this.contentGenerationService = contentGenerationService;
@@ -75,6 +82,8 @@ public class VideoGenerationOrchestrator {
         this.webhookDeliveryService = webhookDeliveryService;
         this.workingDirectoryManager = workingDirectoryManager;
         this.appProperties = appProperties;
+        this.notificationService = notificationService;
+        this.videoPublishService = videoPublishService;
     }
 
     public void processJob(UUID jobId) {
@@ -186,6 +195,14 @@ public class VideoGenerationOrchestrator {
             VideoJob completedJob = videoJobService.markCompleted(jobId, finalVideoUrl);
             emitWebhookSafely(WebhookEventType.JOB_GENERATED, completedJob);
             emitWebhookSafely(WebhookEventType.JOB_COMPLETED, completedJob);
+            notifySafely(
+                completedJob.getUserId(),
+                NotificationType.JOB_COMPLETED,
+                "Video đã sẵn sàng",
+                "Video cho chủ đề \"" + completedJob.getTopic() + "\" đã tạo xong.",
+                jobId
+            );
+            autoPublishIfRequested(completedJob);
 
             log.info("event=job_completed jobId={} finalVideoUrl={}", jobId, finalVideoUrl);
             success = true;
@@ -196,6 +213,13 @@ public class VideoGenerationOrchestrator {
             try {
                 VideoJob failedJob = videoJobService.markFailed(jobId, currentStep, truncate(userFacingMessage, 500), truncate(stepDetails, 8000));
                 emitWebhookSafely(WebhookEventType.JOB_FAILED, failedJob);
+                notifySafely(
+                    failedJob.getUserId(),
+                    NotificationType.JOB_FAILED,
+                    "Tạo video thất bại",
+                    "Video cho chủ đề \"" + failedJob.getTopic() + "\" thất bại: " + truncate(userFacingMessage, 200),
+                    jobId
+                );
             } catch (Exception markFailedEx) {
                 log.error("event=job_mark_failed_error jobId={} message={}", jobId, markFailedEx.getMessage(), markFailedEx);
             }
@@ -390,6 +414,40 @@ public class VideoGenerationOrchestrator {
                 eventType.getEventName(),
                 job.getId(),
                 ex.getMessage()
+            );
+        }
+    }
+
+    private void notifySafely(UUID userId, NotificationType type, String title, String message, UUID jobId) {
+        try {
+            notificationService.notify(userId, type, title, message, java.util.Map.of("jobId", jobId.toString()));
+        } catch (Exception ex) {
+            log.warn("event=notification_emit_failed type={} jobId={} message={}", type, jobId, ex.getMessage());
+        }
+    }
+
+    private void autoPublishIfRequested(VideoJob completedJob) {
+        if (!Boolean.TRUE.equals(completedJob.getAutoPublish())) {
+            return;
+        }
+        try {
+            videoPublishService.publish(completedJob.getId(), completedJob.getUserId(), null);
+            notifySafely(
+                completedJob.getUserId(),
+                NotificationType.PUBLISH_DONE,
+                "Đã đăng video tự động",
+                "Video cho chủ đề \"" + completedJob.getTopic() + "\" đã được gửi đăng.",
+                completedJob.getId()
+            );
+            log.info("event=auto_publish_triggered jobId={}", completedJob.getId());
+        } catch (Exception ex) {
+            log.warn("event=auto_publish_failed jobId={} message={}", completedJob.getId(), ex.getMessage());
+            notifySafely(
+                completedJob.getUserId(),
+                NotificationType.PUBLISH_FAILED,
+                "Đăng video tự động thất bại",
+                "Không thể tự động đăng video cho \"" + completedJob.getTopic() + "\": " + truncate(ex.getMessage(), 200),
+                completedJob.getId()
             );
         }
     }

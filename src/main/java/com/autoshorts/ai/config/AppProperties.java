@@ -32,6 +32,12 @@ public class AppProperties {
     private OpenAi openai = new OpenAi();
 
     @NotNull
+    private Text text = new Text();
+
+    @NotNull
+    private HuggingFace huggingface = new HuggingFace();
+
+    @NotNull
     private Visual visual = new Visual();
 
     @NotNull
@@ -63,6 +69,15 @@ public class AppProperties {
 
     @NotNull
     private Web web = new Web();
+
+    @NotNull
+    private Admin admin = new Admin();
+
+    @NotNull
+    private News news = new News();
+
+    @NotNull
+    private Mail mail = new Mail();
 
     public String getWorkingDir() {
         return workingDir;
@@ -110,6 +125,22 @@ public class AppProperties {
 
     public void setOpenai(OpenAi openai) {
         this.openai = openai;
+    }
+
+    public Text getText() {
+        return text;
+    }
+
+    public void setText(Text text) {
+        this.text = text;
+    }
+
+    public HuggingFace getHuggingface() {
+        return huggingface;
+    }
+
+    public void setHuggingface(HuggingFace huggingface) {
+        this.huggingface = huggingface;
     }
 
     public Visual getVisual() {
@@ -198,6 +229,171 @@ public class AppProperties {
 
     public void setWeb(Web web) {
         this.web = web;
+    }
+
+    public Admin getAdmin() {
+        return admin;
+    }
+
+    public void setAdmin(Admin admin) {
+        this.admin = admin;
+    }
+
+    public News getNews() {
+        return news;
+    }
+
+    public void setNews(News news) {
+        this.news = news;
+    }
+
+    public Mail getMail() {
+        return mail;
+    }
+
+    public void setMail(Mail mail) {
+        this.mail = mail;
+    }
+
+    public static class Admin {
+
+        /**
+         * Emails promoted to ADMIN role on startup (idempotent). Comma-separated via APP_ADMIN_SEED_EMAILS.
+         */
+        private List<String> seedEmails = new java.util.ArrayList<>();
+
+        public List<String> getSeedEmails() {
+            return seedEmails;
+        }
+
+        public void setSeedEmails(List<String> seedEmails) {
+            this.seedEmails = seedEmails;
+        }
+    }
+
+    public static class News {
+
+        private boolean enabled = false;
+
+        @Min(1)
+        private long fixedDelayMs = 300_000;
+
+        @Min(0)
+        private long initialDelayMs = 30_000;
+
+        @Min(1)
+        @Max(50)
+        private int defaultMaxItems = 5;
+
+        @Min(1)
+        private long requestTimeoutMs = 15_000;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public long getFixedDelayMs() {
+            return fixedDelayMs;
+        }
+
+        public void setFixedDelayMs(long fixedDelayMs) {
+            this.fixedDelayMs = fixedDelayMs;
+        }
+
+        public long getInitialDelayMs() {
+            return initialDelayMs;
+        }
+
+        public void setInitialDelayMs(long initialDelayMs) {
+            this.initialDelayMs = initialDelayMs;
+        }
+
+        public int getDefaultMaxItems() {
+            return defaultMaxItems;
+        }
+
+        public void setDefaultMaxItems(int defaultMaxItems) {
+            this.defaultMaxItems = defaultMaxItems;
+        }
+
+        public long getRequestTimeoutMs() {
+            return requestTimeoutMs;
+        }
+
+        public void setRequestTimeoutMs(long requestTimeoutMs) {
+            this.requestTimeoutMs = requestTimeoutMs;
+        }
+    }
+
+    public static class Mail {
+
+        private boolean enabled = false;
+        private String host = "localhost";
+        private int port = 587;
+        private String username;
+        private String password;
+        private String from = "no-reply@autoshorts.local";
+        private boolean startTls = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public String getFrom() {
+            return from;
+        }
+
+        public void setFrom(String from) {
+            this.from = from;
+        }
+
+        public boolean isStartTls() {
+            return startTls;
+        }
+
+        public void setStartTls(boolean startTls) {
+            this.startTls = startTls;
+        }
     }
 
     public static class Cleanup {
@@ -371,11 +567,140 @@ public class AppProperties {
         }
     }
 
+    public static class Text {
+
+        private String provider = "huggingface";
+
+        public String getProvider() {
+            return provider;
+        }
+
+        public void setProvider(String provider) {
+            this.provider = provider;
+        }
+    }
+
+    public static class HuggingFace {
+
+        @NotBlank
+        private String baseUrl = "https://router.huggingface.co";
+
+        private String apiToken;
+        private String provider = "hf-inference";
+        private String textProvider = "hf-inference";
+        private String imageProvider = "hf-inference";
+        private String videoProvider = "fal-ai";
+        private String ttsProvider = "hf-inference";
+        private String textModel = "Qwen/Qwen2.5-7B-Instruct";
+        private String imageModel = "black-forest-labs/FLUX.1-schnell";
+        private String videoModel = "Wan-AI/Wan2.2-T2V-A14B";
+        private String ttsModel;
+
+        @Min(1000)
+        private long requestTimeoutMs = 120_000;
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getApiToken() {
+            return apiToken;
+        }
+
+        public void setApiToken(String apiToken) {
+            this.apiToken = apiToken;
+        }
+
+        public String getProvider() {
+            return provider;
+        }
+
+        public void setProvider(String provider) {
+            this.provider = provider;
+        }
+
+        public String getTextProvider() {
+            return textProvider;
+        }
+
+        public void setTextProvider(String textProvider) {
+            this.textProvider = textProvider;
+        }
+
+        public String getImageProvider() {
+            return imageProvider;
+        }
+
+        public void setImageProvider(String imageProvider) {
+            this.imageProvider = imageProvider;
+        }
+
+        public String getVideoProvider() {
+            return videoProvider;
+        }
+
+        public void setVideoProvider(String videoProvider) {
+            this.videoProvider = videoProvider;
+        }
+
+        public String getTtsProvider() {
+            return ttsProvider;
+        }
+
+        public void setTtsProvider(String ttsProvider) {
+            this.ttsProvider = ttsProvider;
+        }
+
+        public String getTextModel() {
+            return textModel;
+        }
+
+        public void setTextModel(String textModel) {
+            this.textModel = textModel;
+        }
+
+        public String getImageModel() {
+            return imageModel;
+        }
+
+        public void setImageModel(String imageModel) {
+            this.imageModel = imageModel;
+        }
+
+        public String getVideoModel() {
+            return videoModel;
+        }
+
+        public void setVideoModel(String videoModel) {
+            this.videoModel = videoModel;
+        }
+
+        public String getTtsModel() {
+            return ttsModel;
+        }
+
+        public void setTtsModel(String ttsModel) {
+            this.ttsModel = ttsModel;
+        }
+
+        public long getRequestTimeoutMs() {
+            return requestTimeoutMs;
+        }
+
+        public void setRequestTimeoutMs(long requestTimeoutMs) {
+            this.requestTimeoutMs = requestTimeoutMs;
+        }
+    }
+
     public static class Visual {
 
         private boolean enabled = true;
-        private boolean mock = true;
-        private String provider = "openai";
+        private boolean mock;
+        private String provider = "huggingface";
         private String model = "gpt-image-1";
         private String size = "1024x1536";
 
@@ -449,6 +774,7 @@ public class AppProperties {
         private String baseUrl = "https://api.elevenlabs.io";
 
         private String apiKey;
+        private String provider = "huggingface";
         private boolean enabled = true;
         private String defaultVoiceId;
         private String defaultModelId = "eleven_v3";
@@ -470,6 +796,14 @@ public class AppProperties {
 
         public void setApiKey(String apiKey) {
             this.apiKey = apiKey;
+        }
+
+        public String getProvider() {
+            return provider;
+        }
+
+        public void setProvider(String provider) {
+            this.provider = provider;
         }
 
         public boolean isEnabled() {
@@ -935,6 +1269,19 @@ public class AppProperties {
         private String scopes = "user.info.basic,video.publish";
         private String webhookVerifyToken;
         private String apiBaseUrl = "https://open.tiktokapis.com";
+        private String authBaseUrl = "https://www.tiktok.com";
+        private String frontendReturnUrl = "http://localhost:3000/app/integrations/tiktok";
+        private boolean directPublishEnabled;
+
+        @Min(1000)
+        private long statusPollFixedDelayMs = 30_000;
+
+        @Min(1)
+        @Max(200)
+        private int statusPollBatchSize = 25;
+
+        @Min(1)
+        private long statusTimeoutMinutes = 60;
 
         public String getClientKey() {
             return clientKey;
@@ -982,6 +1329,54 @@ public class AppProperties {
 
         public void setApiBaseUrl(String apiBaseUrl) {
             this.apiBaseUrl = apiBaseUrl;
+        }
+
+        public String getAuthBaseUrl() {
+            return authBaseUrl;
+        }
+
+        public void setAuthBaseUrl(String authBaseUrl) {
+            this.authBaseUrl = authBaseUrl;
+        }
+
+        public String getFrontendReturnUrl() {
+            return frontendReturnUrl;
+        }
+
+        public void setFrontendReturnUrl(String frontendReturnUrl) {
+            this.frontendReturnUrl = frontendReturnUrl;
+        }
+
+        public boolean isDirectPublishEnabled() {
+            return directPublishEnabled;
+        }
+
+        public void setDirectPublishEnabled(boolean directPublishEnabled) {
+            this.directPublishEnabled = directPublishEnabled;
+        }
+
+        public long getStatusPollFixedDelayMs() {
+            return statusPollFixedDelayMs;
+        }
+
+        public void setStatusPollFixedDelayMs(long statusPollFixedDelayMs) {
+            this.statusPollFixedDelayMs = statusPollFixedDelayMs;
+        }
+
+        public int getStatusPollBatchSize() {
+            return statusPollBatchSize;
+        }
+
+        public void setStatusPollBatchSize(int statusPollBatchSize) {
+            this.statusPollBatchSize = statusPollBatchSize;
+        }
+
+        public long getStatusTimeoutMinutes() {
+            return statusTimeoutMinutes;
+        }
+
+        public void setStatusTimeoutMinutes(long statusTimeoutMinutes) {
+            this.statusTimeoutMinutes = statusTimeoutMinutes;
         }
     }
 

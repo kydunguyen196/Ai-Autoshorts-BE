@@ -2,6 +2,7 @@ package com.autoshorts.ai.repository;
 
 import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.entity.JobStatus;
+import com.autoshorts.ai.entity.PublishStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -74,7 +75,26 @@ public interface VideoJobRepository extends JpaRepository<VideoJob, UUID> {
         Collection<JobStatus> statuses
     );
 
+    // --- Admin / dashboard aggregates ---
+    long countByStatus(JobStatus status);
+
+    long countByCreatedAtAfter(Instant createdAfter);
+
+    Page<VideoJob> findByStatus(JobStatus status, Pageable pageable);
+
     List<VideoJob> findByStatusAndUpdatedAtBefore(JobStatus status, Instant updatedBefore, Pageable pageable);
 
     List<VideoJob> findByStatusAndCreatedAtBefore(JobStatus status, Instant createdBefore, Pageable pageable);
+
+    /**
+     * Posts submitted to an async publish provider that are awaiting completion.
+     * Ordered oldest-checked-first (never-checked first) so the reconciler is fair under backlog.
+     */
+    @Query("select j from VideoJob j where j.publishStatus = :status and j.publishProvider = :provider "
+        + "and j.publishExternalId is not null order by j.publishLastStatusCheckAt asc nulls first")
+    List<VideoJob> findPendingAsyncPublishes(
+        @Param("status") PublishStatus status,
+        @Param("provider") String provider,
+        Pageable pageable
+    );
 }

@@ -173,6 +173,9 @@ public class VideoJob {
     @Column(name = "selected_for_publish", nullable = false)
     private Boolean selectedForPublish = false;
 
+    @Column(name = "auto_publish", nullable = false)
+    private Boolean autoPublish = false;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "publish_status", length = 32, nullable = false)
     private PublishStatus publishStatus = PublishStatus.NOT_PUBLISHED;
@@ -737,6 +740,14 @@ public class VideoJob {
 
     public void setSelectedForPublish(Boolean selectedForPublish) {
         this.selectedForPublish = selectedForPublish;
+    }
+
+    public Boolean getAutoPublish() {
+        return autoPublish;
+    }
+
+    public void setAutoPublish(Boolean autoPublish) {
+        this.autoPublish = autoPublish;
     }
 
     public PublishStatus getPublishStatus() {

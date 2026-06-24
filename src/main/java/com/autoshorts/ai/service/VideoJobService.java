@@ -160,6 +160,7 @@ public class VideoJobService {
             job.setReviewedBy(null);
             job.setRejectionReason(null);
             job.setSelectedForPublish(false);
+            job.setAutoPublish(request.isAutoPublish());
             job.setPublishStatus(PublishStatus.NOT_PUBLISHED);
 
             VideoJob saved = videoJobRepository.save(job);

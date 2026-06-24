@@ -114,6 +114,7 @@ public class TopicAutomationService {
         request.setChannelId(topicIdea.getChannelId());
         request.setDurationSeconds(appProperties.getScheduler().getDefaultDurationSeconds());
         request.setVoiceId(trimToNull(appProperties.getScheduler().getDefaultVoiceId()));
+        request.setAutoPublish(topicIdea.isAutoPublish());
         return request;
     }
 

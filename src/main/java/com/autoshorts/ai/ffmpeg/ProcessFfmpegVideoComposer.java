@@ -116,12 +116,19 @@ public class ProcessFfmpegVideoComposer implements FfmpegVideoComposer {
 
         if (useSceneSegments) {
             for (SceneMediaSegment segment : sceneSegments) {
-                command.add("-loop");
-                command.add("1");
-                command.add("-framerate");
-                command.add("30");
-                command.add("-t");
-                command.add(String.valueOf(segment.getDurationSeconds()));
+                if (isImage(segment.getMediaPath())) {
+                    command.add("-loop");
+                    command.add("1");
+                    command.add("-framerate");
+                    command.add("30");
+                    command.add("-t");
+                    command.add(String.valueOf(segment.getDurationSeconds()));
+                } else {
+                    command.add("-stream_loop");
+                    command.add("-1");
+                    command.add("-t");
+                    command.add(String.valueOf(segment.getDurationSeconds()));
+                }
                 command.add("-i");
                 command.add(segment.getMediaPath().toAbsolutePath().toString());
             }
@@ -178,7 +185,9 @@ public class ProcessFfmpegVideoComposer implements FfmpegVideoComposer {
         command.add("-c:v");
         command.add("libx264");
         command.add("-preset");
-        command.add("veryfast");
+        command.add("medium");
+        command.add("-crf");
+        command.add("18");
         command.add("-pix_fmt");
         command.add("yuv420p");
         command.add("-c:a");
@@ -198,18 +207,28 @@ public class ProcessFfmpegVideoComposer implements FfmpegVideoComposer {
         for (int index = 0; index < sceneSegments.size(); index++) {
             SceneMediaSegment segment = sceneSegments.get(index);
             int frames = Math.max(1, segment.getDurationSeconds() * 30);
-            String xExpr = index % 2 == 0 ? "(iw-iw/zoom)*0.35" : "(iw-iw/zoom)*0.65";
-            String yExpr = index % 3 == 0 ? "(ih-ih/zoom)*0.30" : "(ih-ih/zoom)*0.55";
 
+            filter.append('[').append(index).append(":v]");
+            if (isImage(segment.getMediaPath())) {
+                String xExpr = index % 2 == 0 ? "(iw-iw/zoom)*0.35" : "(iw-iw/zoom)*0.65";
+                String yExpr = index % 3 == 0 ? "(ih-ih/zoom)*0.30" : "(ih-ih/zoom)*0.55";
+                filter
+                    .append("scale=1260:2240:force_original_aspect_ratio=increase,")
+                    .append("crop=1080:1920,")
+                    .append("zoompan=z='min(zoom+0.00085,1.12)':")
+                    .append("x='").append(xExpr).append("':")
+                    .append("y='").append(yExpr).append("':")
+                    .append("d=").append(frames).append(":")
+                    .append("s=1080x1920:fps=30,");
+            } else {
+                filter
+                    .append("scale=1080:1920:force_original_aspect_ratio=increase,")
+                    .append("crop=1080:1920,")
+                    .append("trim=duration=").append(segment.getDurationSeconds()).append(',')
+                    .append("setpts=PTS-STARTPTS,")
+                    .append("fps=30,");
+            }
             filter
-                .append('[').append(index).append(":v]")
-                .append("scale=1260:2240:force_original_aspect_ratio=increase,")
-                .append("crop=1080:1920,")
-                .append("zoompan=z='min(zoom+0.00085,1.12)':")
-                .append("x='").append(xExpr).append("':")
-                .append("y='").append(yExpr).append("':")
-                .append("d=").append(frames).append(":")
-                .append("s=1080x1920:fps=30,")
                 .append("format=yuv420p")
                 .append("[v").append(index).append("];");
         }

@@ -31,11 +31,15 @@ public class HealthController {
         response.put("workingDir", Path.of(appProperties.getWorkingDir()).toAbsolutePath().normalize().toString());
         response.put("workingDirWritable", isWorkingDirWritable());
         response.put("ffmpegBinary", appProperties.getFfmpeg().getBinary());
-        response.put("effectiveOpenAiMock", isOpenAiMockEffective());
-        response.put("openAiMockConfigured", appProperties.getOpenai().isMock());
-        response.put("openAiApiKeyPresent", StringUtils.hasText(appProperties.getOpenai().getApiKey()));
-        response.put("openAiEffectiveMode", resolveOpenAiEffectiveMode());
-        response.put("effectiveElevenLabsMock", isElevenLabsMockEffective());
+        response.put("contentProvider", appProperties.getText().getProvider());
+        response.put("huggingFaceTokenPresent", StringUtils.hasText(appProperties.getHuggingface().getApiToken()));
+        response.put("contentEffectiveMode", resolveContentEffectiveMode());
+        response.put("visualProvider", appProperties.getVisual().getProvider());
+        response.put("hfImageModel", appProperties.getHuggingface().getImageModel());
+        response.put("hfVideoModel", appProperties.getHuggingface().getVideoModel());
+        response.put("audioProvider", appProperties.getElevenlabs().getProvider());
+        response.put("hfTtsModelConfigured", StringUtils.hasText(appProperties.getHuggingface().getTtsModel()));
+        response.put("audioFallbackExpected", isAudioFallbackExpected());
         response.put("storageMock", appProperties.getStorage().isMock());
         response.put("schedulerEnabled", appProperties.getScheduler().isEnabled());
         response.put("schedulerBatchSize", appProperties.getScheduler().getBatchSize());
@@ -58,21 +62,17 @@ public class HealthController {
         }
     }
 
-    private boolean isOpenAiMockEffective() {
-        return appProperties.getOpenai().isMock() || !StringUtils.hasText(appProperties.getOpenai().getApiKey());
-    }
-
-    private String resolveOpenAiEffectiveMode() {
-        if (appProperties.getOpenai().isMock()) {
-            return "MOCK";
-        }
-        if (StringUtils.hasText(appProperties.getOpenai().getApiKey())) {
+    private String resolveContentEffectiveMode() {
+        if ("huggingface".equalsIgnoreCase(appProperties.getText().getProvider())
+            && StringUtils.hasText(appProperties.getHuggingface().getApiToken())) {
             return "REAL";
         }
         return "FALLBACK_ONLY";
     }
 
-    private boolean isElevenLabsMockEffective() {
-        return appProperties.getElevenlabs().isMock() || !StringUtils.hasText(appProperties.getElevenlabs().getApiKey());
+    private boolean isAudioFallbackExpected() {
+        return appProperties.getElevenlabs().isMock()
+            || !"huggingface".equalsIgnoreCase(appProperties.getElevenlabs().getProvider())
+            || !StringUtils.hasText(appProperties.getHuggingface().getTtsModel());
     }
 }

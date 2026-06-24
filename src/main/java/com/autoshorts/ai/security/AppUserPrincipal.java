@@ -15,12 +15,14 @@ public class AppUserPrincipal implements UserDetails {
     private final String email;
     private final String passwordHash;
     private final String role;
+    private final boolean enabled;
 
     public AppUserPrincipal(AppUser user) {
         this.userId = user.getId();
         this.email = user.getEmail();
         this.passwordHash = user.getPasswordHash();
         this.role = user.getRole().name();
+        this.enabled = user.isEnabled();
     }
 
     public UUID getUserId() {
@@ -59,6 +61,6 @@ public class AppUserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }

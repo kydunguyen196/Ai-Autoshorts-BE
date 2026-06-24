@@ -162,7 +162,7 @@ public class ContentGenerationService {
             );
         } catch (Exception ex) {
             log.warn(
-                "event=content_generation_fallback reason=openai_call_failed style={} templateId={} variantKey={} hookType={} ctaType={} structureType={} message={}",
+                "event=content_generation_fallback reason=provider_call_failed style={} templateId={} variantKey={} hookType={} ctaType={} structureType={} message={}",
                 promptBuild.resolvedStyle(),
                 promptBuild.templateId(),
                 promptBuild.styleVariantKey(),
@@ -171,7 +171,7 @@ public class ContentGenerationService {
                 structureStrategy,
                 ex.getMessage()
             );
-            return fallbackContent(topic, durationSeconds, promptBuild, template, hookStrategy, ctaStrategy, structureStrategy, "openai_call_failed");
+            return fallbackContent(topic, durationSeconds, promptBuild, template, hookStrategy, ctaStrategy, structureStrategy, "provider_call_failed");
         }
 
         GeneratedContent generated = parseGeneratedContent(

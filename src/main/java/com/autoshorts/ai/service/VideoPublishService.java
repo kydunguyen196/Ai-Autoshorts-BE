@@ -96,6 +96,19 @@ public class VideoPublishService {
             throw new ExternalServiceException("Video publish failed: " + truncate(ex.getMessage(), 300));
         }
 
+        if (result.pendingAsync()) {
+            // Provider accepted the post but completion is asynchronous (e.g. TikTok processing).
+            // Keep the job PUBLISHING; TikTokPublishStatusService will finalize it after polling.
+            VideoJob submitted = markPublishSubmitted(jobId, userId, context, result);
+            log.info(
+                "event=publish_attempt_submitted_async jobId={} provider={} externalId={}",
+                submitted.getId(),
+                submitted.getPublishProvider(),
+                submitted.getPublishExternalId()
+            );
+            return VideoJobMapper.toResponse(submitted);
+        }
+
         VideoJob published = markPublished(jobId, userId, context, result);
         emitWebhookSafely(WebhookEventType.PUBLISH_SUCCEEDED, published, Map.of("provider", context.providerKey()));
         emitWebhookSafely(WebhookEventType.JOB_PUBLISHED, published, Map.of("provider", context.providerKey()));
@@ -206,6 +219,110 @@ public class VideoPublishService {
                 saved.getPublishAttemptCount()
             );
             return saved;
+        });
+    }
+
+    /** Record an accepted-but-pending async post; the job stays PUBLISHING until reconciled. */
+    protected VideoJob markPublishSubmitted(UUID jobId, UUID userId, PublishAttemptContext context, PublishResult result) {
+        return transactionTemplate.execute(status -> {
+            VideoJob job = videoJobRepository.findByIdAndUserIdForUpdate(jobId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+
+            job.setPublishStatus(PublishStatus.PUBLISHING);
+            job.setPublishPlatform(context.platform());
+            job.setPublishProvider(result.provider());
+            job.setPublishExternalId(result.externalId());
+            job.setPublishTargetAccountId(firstNonBlank(result.targetAccountId(), context.targetAccountId()));
+            job.setPublishRequestPayloadJson(firstNonBlank(result.requestPayloadJson(), job.getPublishRequestPayloadJson()));
+            job.setPublishResponsePayloadJson(firstNonBlank(result.responsePayloadJson(), job.getPublishResponsePayloadJson()));
+            job.setPublishFailureReason(null);
+            job.setPublishFailureDetails(null);
+            job.setPublishLastErrorAt(null);
+            // Leave publishLastStatusCheckAt null so the reconciler picks it up on the next cycle.
+            job.setPublishLastStatusCheckAt(null);
+            return saveAndCache(job);
+        });
+    }
+
+    /**
+     * Finalize an async post as PUBLISHED. Idempotent: no-op if the job is no longer PUBLISHING.
+     * Called by the status reconciler (system context — no per-user ownership check).
+     */
+    public VideoJob completeAsyncPublish(UUID jobId, String externalId, String responsePayloadJson) {
+        AsyncTransition transition = transactionTemplate.execute(status -> {
+            VideoJob job = videoJobRepository.findByIdForUpdate(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+            if (job.getPublishStatus() != PublishStatus.PUBLISHING) {
+                return new AsyncTransition(job, false);
+            }
+            Instant now = Instant.now();
+            job.setPublishStatus(PublishStatus.PUBLISHED);
+            job.setPublishedAt(now);
+            if (StringUtils.hasText(externalId)) {
+                job.setPublishExternalId(externalId);
+            }
+            if (StringUtils.hasText(responsePayloadJson)) {
+                job.setPublishResponsePayloadJson(responsePayloadJson);
+            }
+            job.setPublishFailureReason(null);
+            job.setPublishFailureDetails(null);
+            job.setPublishLastErrorAt(null);
+            job.setPublishLastStatusCheckAt(now);
+            return new AsyncTransition(saveAndCache(job), true);
+        });
+
+        if (transition.changed()) {
+            log.info(
+                "event=publish_async_completed jobId={} provider={} externalId={}",
+                transition.job().getId(),
+                transition.job().getPublishProvider(),
+                transition.job().getPublishExternalId()
+            );
+            emitWebhookSafely(WebhookEventType.PUBLISH_SUCCEEDED, transition.job(), Map.of("provider", safe(transition.job().getPublishProvider())));
+            emitWebhookSafely(WebhookEventType.JOB_PUBLISHED, transition.job(), Map.of("provider", safe(transition.job().getPublishProvider())));
+        }
+        return transition.job();
+    }
+
+    /**
+     * Finalize an async post as PUBLISH_FAILED. Idempotent: no-op if the job is no longer PUBLISHING.
+     */
+    public VideoJob failAsyncPublish(UUID jobId, String reason, String details) {
+        AsyncTransition transition = transactionTemplate.execute(status -> {
+            VideoJob job = videoJobRepository.findByIdForUpdate(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+            if (job.getPublishStatus() != PublishStatus.PUBLISHING) {
+                return new AsyncTransition(job, false);
+            }
+            Instant now = Instant.now();
+            job.setPublishStatus(PublishStatus.PUBLISH_FAILED);
+            job.setPublishFailureReason(truncate(reason, 500));
+            job.setPublishFailureDetails(truncate(details, 4000));
+            job.setPublishLastErrorAt(now);
+            job.setPublishLastStatusCheckAt(now);
+            return new AsyncTransition(saveAndCache(job), true);
+        });
+
+        if (transition.changed()) {
+            log.warn(
+                "event=publish_async_failed jobId={} provider={} reason={}",
+                transition.job().getId(),
+                transition.job().getPublishProvider(),
+                transition.job().getPublishFailureReason()
+            );
+            emitWebhookSafely(WebhookEventType.PUBLISH_FAILED, transition.job(), Map.of("provider", safe(transition.job().getPublishProvider())));
+            emitWebhookSafely(WebhookEventType.JOB_PUBLISH_FAILED, transition.job(), Map.of("provider", safe(transition.job().getPublishProvider())));
+        }
+        return transition.job();
+    }
+
+    /** Record that a status check happened without a state change (post still processing). */
+    public void touchPublishStatusCheck(UUID jobId) {
+        transactionTemplate.executeWithoutResult(status -> {
+            videoJobRepository.findByIdForUpdate(jobId).ifPresent(job -> {
+                job.setPublishLastStatusCheckAt(Instant.now());
+                saveAndCache(job);
+            });
         });
     }
 
@@ -343,6 +460,10 @@ public class VideoPublishService {
         return fallback;
     }
 
+    private String safe(String value) {
+        return StringUtils.hasText(value) ? value : "unknown";
+    }
+
     private String buildPublishRequestSnapshot(VideoJob job, String platform, String providerKey, String targetAccountId) {
         return "{\"jobId\":\"" + job.getId() + "\",\"platform\":\"" + platform + "\",\"provider\":\""
             + providerKey + "\",\"targetAccountId\":\"" + safeJson(targetAccountId)
@@ -379,5 +500,8 @@ public class VideoPublishService {
     }
 
     private record PublishReadiness(boolean publishable, String reason, String tiktokConnectionStatus) {
+    }
+
+    private record AsyncTransition(VideoJob job, boolean changed) {
     }
 }

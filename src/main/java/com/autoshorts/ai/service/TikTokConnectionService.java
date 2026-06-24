@@ -5,14 +5,13 @@ import com.autoshorts.ai.dto.TikTokConnectionUpsertRequest;
 import com.autoshorts.ai.entity.TikTokAccountConnection;
 import com.autoshorts.ai.entity.TikTokConnectionStatus;
 import com.autoshorts.ai.repository.TikTokAccountConnectionRepository;
+import com.autoshorts.ai.security.TokenCipher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,10 +21,16 @@ public class TikTokConnectionService {
 
     private final TikTokAccountConnectionRepository repository;
     private final ChannelService channelService;
+    private final TokenCipher tokenCipher;
 
-    public TikTokConnectionService(TikTokAccountConnectionRepository repository, ChannelService channelService) {
+    public TikTokConnectionService(
+        TikTokAccountConnectionRepository repository,
+        ChannelService channelService,
+        TokenCipher tokenCipher
+    ) {
         this.repository = repository;
         this.channelService = channelService;
+        this.tokenCipher = tokenCipher;
     }
 
     @Transactional
@@ -133,9 +138,7 @@ public class TikTokConnectionService {
         if (!StringUtils.hasText(rawToken)) {
             return null;
         }
-        String value = rawToken.trim();
-        String encoded = Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
-        return "enc:v1:" + encoded;
+        return tokenCipher.encrypt(rawToken.trim());
     }
 
     private String trimToNull(String value) {

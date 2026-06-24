@@ -51,6 +51,9 @@ public class TopicIdea {
     @Column(name = "last_used_at")
     private Instant lastUsedAt;
 
+    @Column(name = "auto_publish", nullable = false)
+    private boolean autoPublish = false;
+
     @Version
     @Column(nullable = false)
     private Long version = 0L;
@@ -170,6 +173,14 @@ public class TopicIdea {
 
     public void setLastUsedAt(Instant lastUsedAt) {
         this.lastUsedAt = lastUsedAt;
+    }
+
+    public boolean isAutoPublish() {
+        return autoPublish;
+    }
+
+    public void setAutoPublish(boolean autoPublish) {
+        this.autoPublish = autoPublish;
     }
 
     public Long getVersion() {

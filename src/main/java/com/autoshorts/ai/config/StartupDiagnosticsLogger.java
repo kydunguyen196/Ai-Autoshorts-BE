@@ -22,32 +22,36 @@ public class StartupDiagnosticsLogger implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        boolean openAiMockConfigured = appProperties.getOpenai().isMock();
-        boolean openAiApiKeyPresent = StringUtils.hasText(appProperties.getOpenai().getApiKey());
-        String openAiEffectiveMode = openAiMockConfigured
-            ? "MOCK"
-            : (openAiApiKeyPresent ? "REAL" : "FALLBACK_ONLY");
+        String contentProvider = appProperties.getText().getProvider();
+        boolean huggingFaceTokenPresent = StringUtils.hasText(appProperties.getHuggingface().getApiToken());
+        String contentEffectiveMode = "huggingface".equalsIgnoreCase(contentProvider)
+            ? (huggingFaceTokenPresent ? "REAL" : "FALLBACK_ONLY")
+            : "UNSUPPORTED";
         boolean visualMockConfigured = appProperties.getVisual().isMock();
         String visualEffectiveMode = !appProperties.getVisual().isEnabled()
             ? "DISABLED"
-            : (visualMockConfigured ? "MOCK" : (openAiApiKeyPresent ? "REAL" : "FALLBACK_ONLY"));
-        boolean elevenLabsMockEffective = appProperties.getElevenlabs().isMock()
-            || !StringUtils.hasText(appProperties.getElevenlabs().getApiKey());
+            : (visualMockConfigured ? "MOCK" : (huggingFaceTokenPresent ? "REAL" : "FALLBACK_ONLY"));
+        boolean audioFallbackExpected = appProperties.getElevenlabs().isMock()
+            || !"huggingface".equalsIgnoreCase(appProperties.getElevenlabs().getProvider())
+            || !StringUtils.hasText(appProperties.getHuggingface().getTtsModel());
 
         log.info(
-            "event=startup_config workingDir={} ffmpegBinary={} openAiMockConfigured={} openAiApiKeyPresent={} openAiEffectiveMode={} visualEnabled={} visualProvider={} visualMockConfigured={} visualEffectiveMode={} visualModel={} visualMaxScenes={} elevenLabsMockEffective={} storageMock={} storageLocalPublicBaseUrl={} cleanupEnabled={} keepFailedJobFiles={} schedulerEnabled={} schedulerFixedDelayMs={} schedulerBatchSize={} queueEnabled={} queueName={} queueExchange={} queueRoutingKey={} queueDeadLetterName={} queueMaxProcessingAttempts={} publishEnabled={} publishProvider={} publishDefaultPlatform={} webhookEnabled={} webhookEndpointConfigured={}",
+            "event=startup_config workingDir={} ffmpegBinary={} contentProvider={} huggingFaceTokenPresent={} contentEffectiveMode={} visualEnabled={} visualProvider={} visualMockConfigured={} visualEffectiveMode={} hfImageModel={} hfVideoModel={} visualMaxScenes={} audioProvider={} hfTtsModelConfigured={} audioFallbackExpected={} storageMock={} storageLocalPublicBaseUrl={} cleanupEnabled={} keepFailedJobFiles={} schedulerEnabled={} schedulerFixedDelayMs={} schedulerBatchSize={} queueEnabled={} queueName={} queueExchange={} queueRoutingKey={} queueDeadLetterName={} queueMaxProcessingAttempts={} publishEnabled={} publishProvider={} publishDefaultPlatform={} webhookEnabled={} webhookEndpointConfigured={}",
             Path.of(appProperties.getWorkingDir()).toAbsolutePath().normalize(),
             appProperties.getFfmpeg().getBinary(),
-            openAiMockConfigured,
-            openAiApiKeyPresent,
-            openAiEffectiveMode,
+            contentProvider,
+            huggingFaceTokenPresent,
+            contentEffectiveMode,
             appProperties.getVisual().isEnabled(),
             appProperties.getVisual().getProvider(),
             visualMockConfigured,
             visualEffectiveMode,
-            appProperties.getVisual().getModel(),
+            appProperties.getHuggingface().getImageModel(),
+            appProperties.getHuggingface().getVideoModel(),
             appProperties.getVisual().getMaxScenes(),
-            elevenLabsMockEffective,
+            appProperties.getElevenlabs().getProvider(),
+            StringUtils.hasText(appProperties.getHuggingface().getTtsModel()),
+            audioFallbackExpected,
             appProperties.getStorage().isMock(),
             appProperties.getStorage().getLocalPublicBaseUrl(),
             appProperties.getCleanup().isDeleteTempFiles(),
