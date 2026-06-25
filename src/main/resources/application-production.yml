@@ -1,10 +1,18 @@
 app:
   openai:
     mock: false
+  # Premium AI providers by default in production (override via env). Requires the matching keys:
+  # ANTHROPIC_API_KEY for text, ELEVENLABS_API_KEY + ELEVENLABS_DEFAULT_VOICE_ID for TTS.
+  text:
+    provider: ${APP_TEXT_PROVIDER:anthropic}
   elevenlabs:
     mock: false
+    provider: ${ELEVENLABS_PROVIDER:elevenlabs}
   visual:
     mock: false
+    # Real visual generation (FLUX image / Wan video via HuggingFace). Premium video (Runway/Pika/Luma)
+    # is a follow-up provider; plug it in behind APP_VISUAL_PROVIDER when its API credentials are available.
+    provider: ${APP_VISUAL_PROVIDER:huggingface-video}
   storage:
     mock: false
   publish:
