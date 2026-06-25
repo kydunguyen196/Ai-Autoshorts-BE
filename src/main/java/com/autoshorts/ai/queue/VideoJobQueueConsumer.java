@@ -2,6 +2,7 @@ package com.autoshorts.ai.queue;
 
 import com.autoshorts.ai.entity.JobStatus;
 import com.autoshorts.ai.entity.VideoJob;
+import com.autoshorts.ai.metrics.PipelineMetrics;
 import com.autoshorts.ai.orchestration.VideoGenerationOrchestrator;
 import com.autoshorts.ai.service.VideoJobService;
 import org.slf4j.Logger;
@@ -22,13 +23,16 @@ public class VideoJobQueueConsumer {
 
     private final VideoGenerationOrchestrator videoGenerationOrchestrator;
     private final VideoJobService videoJobService;
+    private final PipelineMetrics pipelineMetrics;
 
     public VideoJobQueueConsumer(
         VideoGenerationOrchestrator videoGenerationOrchestrator,
-        VideoJobService videoJobService
+        VideoJobService videoJobService,
+        PipelineMetrics pipelineMetrics
     ) {
         this.videoGenerationOrchestrator = videoGenerationOrchestrator;
         this.videoJobService = videoJobService;
+        this.pipelineMetrics = pipelineMetrics;
     }
 
     @RabbitListener(
@@ -60,9 +64,17 @@ public class VideoJobQueueConsumer {
                 job.getStatus(),
                 message.dispatchSource()
             );
+            pipelineMetrics.recordConsumed("skipped");
             return;
         }
 
-        videoGenerationOrchestrator.processJob(jobId);
+        try {
+            videoGenerationOrchestrator.processJob(jobId);
+            pipelineMetrics.recordConsumed("processed");
+        } catch (RuntimeException ex) {
+            // Re-thrown so RabbitMQ retry/DLQ handling still applies; metric records the delivery error.
+            pipelineMetrics.recordConsumed("error");
+            throw ex;
+        }
     }
 }

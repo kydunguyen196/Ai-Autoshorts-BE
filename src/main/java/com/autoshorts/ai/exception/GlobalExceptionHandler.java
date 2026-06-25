@@ -72,6 +72,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ExternalServiceException.class)
     public ResponseEntity<ApiErrorResponse> handleExternal(ExternalServiceException ex, HttpServletRequest request) {
         log.warn("event=external_service_error path={} message={}", request.getRequestURI(), ex.getMessage());
+        io.sentry.Sentry.captureException(ex);
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
             .body(build(HttpStatus.BAD_GATEWAY, ex.getMessage(), request.getRequestURI(), null));
     }
@@ -79,6 +80,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
         log.error("event=unhandled_exception path={} message={}", request.getRequestURI(), ex.getMessage(), ex);
+        // Captured explicitly because this advice handles the exception, so Sentry's auto-capture never sees it.
+        // No-op when SENTRY_DSN is unset.
+        io.sentry.Sentry.captureException(ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", request.getRequestURI(), null));
     }

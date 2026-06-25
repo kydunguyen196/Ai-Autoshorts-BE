@@ -35,6 +35,11 @@ public class ProcessFfmpegVideoComposer implements FfmpegVideoComposer {
     }
 
     @Override
+    public void verifyBinaryAvailable() {
+        ensureFfmpegAvailability();
+    }
+
+    @Override
     public void compose(VideoCompositionRequest request) {
         ensureFfmpegAvailability();
         validateInput(request);

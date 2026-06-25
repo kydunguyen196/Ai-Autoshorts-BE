@@ -7,7 +7,9 @@ import com.autoshorts.ai.entity.TopicIdeaStatus;
 import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.integration.support.IntegrationTestBase;
 import com.autoshorts.ai.integration.support.IntegrationTestConfiguration;
+import com.autoshorts.ai.config.AppProperties;
 import com.autoshorts.ai.orchestration.TopicAutomationScheduler;
+import com.autoshorts.ai.service.SettingsService;
 import com.autoshorts.ai.service.TopicAutomationService;
 import com.autoshorts.ai.service.VideoJobService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,6 +34,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -115,7 +119,10 @@ class SchedulerAutomationIT extends IntegrationTestBase {
             return 1;
         });
 
-        TopicAutomationScheduler scheduler = new TopicAutomationScheduler(mockService);
+        SettingsService settingsService = mock(SettingsService.class);
+        when(settingsService.getBoolean(anyString(), anyBoolean())).thenReturn(true);
+        TopicAutomationScheduler scheduler =
+            new TopicAutomationScheduler(mockService, settingsService, new AppProperties());
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             Future<?> first = executor.submit(scheduler::runCycle);

@@ -13,6 +13,7 @@ import com.autoshorts.ai.exception.InvalidJobStateException;
 import com.autoshorts.ai.ffmpeg.FfmpegVideoComposer;
 import com.autoshorts.ai.ffmpeg.SceneMediaSegment;
 import com.autoshorts.ai.ffmpeg.VideoCompositionRequest;
+import com.autoshorts.ai.metrics.PipelineMetrics;
 import com.autoshorts.ai.service.ContentGenerationService;
 import com.autoshorts.ai.service.NotificationService;
 import com.autoshorts.ai.service.VideoPublishService;
@@ -53,6 +54,7 @@ public class VideoGenerationOrchestrator {
     private final AppProperties appProperties;
     private final NotificationService notificationService;
     private final VideoPublishService videoPublishService;
+    private final PipelineMetrics pipelineMetrics;
 
     public VideoGenerationOrchestrator(
         VideoJobService videoJobService,
@@ -68,7 +70,8 @@ public class VideoGenerationOrchestrator {
         WorkingDirectoryManager workingDirectoryManager,
         AppProperties appProperties,
         NotificationService notificationService,
-        VideoPublishService videoPublishService
+        VideoPublishService videoPublishService,
+        PipelineMetrics pipelineMetrics
     ) {
         this.videoJobService = videoJobService;
         this.contentGenerationService = contentGenerationService;
@@ -84,6 +87,7 @@ public class VideoGenerationOrchestrator {
         this.appProperties = appProperties;
         this.notificationService = notificationService;
         this.videoPublishService = videoPublishService;
+        this.pipelineMetrics = pipelineMetrics;
     }
 
     public void processJob(UUID jobId) {
@@ -206,7 +210,10 @@ public class VideoGenerationOrchestrator {
 
             log.info("event=job_completed jobId={} finalVideoUrl={}", jobId, finalVideoUrl);
             success = true;
+            pipelineMetrics.recordJobOutcome("completed", null);
         } catch (Exception ex) {
+            pipelineMetrics.recordJobOutcome("failed", currentStep);
+            io.sentry.Sentry.captureException(ex);
             log.error("event=job_failed jobId={} step={} message={}", jobId, currentStep, ex.getMessage(), ex);
             String userFacingMessage = buildUserFacingErrorMessage(currentStep, ex);
             String stepDetails = buildStepErrorDetails(currentStep, userFacingMessage, ex);
@@ -325,10 +332,12 @@ public class VideoGenerationOrchestrator {
         try {
             T result = stepSupplier.get();
             long elapsed = System.currentTimeMillis() - startedAt;
+            pipelineMetrics.recordStep(step, "success", elapsed);
             log.info("event=job_step_success jobId={} step={} elapsedMs={}", jobId, step, elapsed);
             return result;
         } catch (Exception ex) {
             long elapsed = System.currentTimeMillis() - startedAt;
+            pipelineMetrics.recordStep(step, "failure", elapsed);
             log.error("event=job_step_failed jobId={} step={} elapsedMs={} message={}", jobId, step, elapsed, ex.getMessage());
             throw ex;
         }

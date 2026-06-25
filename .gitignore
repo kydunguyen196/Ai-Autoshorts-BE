@@ -13,6 +13,10 @@ out/
 work/
 tmp/
 logs/
+*.log
 run-be.err.log
 run-be.out.log
+bootrun-*.log
+*-hf-test.log
+run-hf-test.ps1
 assets/backgrounds/default.mp4

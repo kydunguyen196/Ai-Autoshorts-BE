@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Console logging with two formats selected by the active Spring profile:
+    - production / staging -> structured JSON (logstash encoder) for log aggregation
+    - everything else      -> human-readable pattern (default; used for local dev)
+  Log levels are still driven by application.yml (logging.level.*).
+-->
+<configuration>
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="auto-shorts-ai"/>
+
+    <appender name="CONSOLE_TEXT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"application":"${appName}"}</customFields>
+        </encoder>
+    </appender>
+
+    <springProfile name="production | staging">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE_JSON"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="!production &amp; !staging">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE_TEXT"/>
+        </root>
+    </springProfile>
+</configuration>
