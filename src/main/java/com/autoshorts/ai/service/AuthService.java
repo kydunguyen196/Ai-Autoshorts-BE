@@ -22,6 +22,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Locale;
 
 @Service
@@ -35,6 +36,8 @@ public class AuthService {
     private final JwtTokenService jwtTokenService;
     private final ChannelService channelService;
     private final CurrentUserService currentUserService;
+    private final RefreshTokenService refreshTokenService;
+    private final LoginAttemptService loginAttemptService;
 
     public AuthService(
         AppUserRepository appUserRepository,
@@ -42,7 +45,9 @@ public class AuthService {
         AuthenticationManager authenticationManager,
         JwtTokenService jwtTokenService,
         ChannelService channelService,
-        CurrentUserService currentUserService
+        CurrentUserService currentUserService,
+        RefreshTokenService refreshTokenService,
+        LoginAttemptService loginAttemptService
     ) {
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
@@ -50,6 +55,8 @@ public class AuthService {
         this.jwtTokenService = jwtTokenService;
         this.channelService = channelService;
         this.currentUserService = currentUserService;
+        this.refreshTokenService = refreshTokenService;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @Transactional
@@ -72,32 +79,60 @@ public class AuthService {
         }
 
         channelService.ensureDefaultChannel(saved.getId());
-        AppUserPrincipal principal = new AppUserPrincipal(saved);
-        String token = jwtTokenService.generateToken(principal);
 
         log.info("event=user_registered userId={} email={}", saved.getId(), saved.getEmail());
-        return buildAuthResponse(saved, token);
+        return issueTokens(saved, new AppUserPrincipal(saved));
     }
 
-    @Transactional
+    // Not @Transactional: the failed-login counter is persisted by LoginAttemptService in its own
+    // transaction, so a bad-password BadRequestException here must not roll it back.
     public AuthResponse login(LoginRequest request) {
         String email = normalizeEmail(request.getEmail());
+        AppUser existing = appUserRepository.findByEmailIgnoreCase(email).orElse(null);
+        Instant now = Instant.now();
+        if (existing != null && loginAttemptService.isLocked(existing, now)) {
+            throw new BadRequestException("Account is temporarily locked due to repeated failed logins. Please try again later.");
+        }
+
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, request.getPassword())
             );
         } catch (AuthenticationException ex) {
+            if (existing != null) {
+                loginAttemptService.recordFailure(existing.getId());
+            }
             throw new BadRequestException("Invalid email or password");
         }
 
         AppUserPrincipal principal = (AppUserPrincipal) authentication.getPrincipal();
         AppUser user = appUserRepository.findById(principal.getUserId())
             .orElseThrow(() -> new BadRequestException("User account not found"));
-        String token = jwtTokenService.generateToken(principal);
+        loginAttemptService.reset(user.getId());
 
         log.info("event=user_logged_in userId={} email={}", user.getId(), user.getEmail());
-        return buildAuthResponse(user, token);
+        return issueTokens(user, principal);
+    }
+
+    @Transactional
+    public AuthResponse refresh(String rawRefreshToken) {
+        RefreshTokenService.RotationResult rotation = refreshTokenService.rotate(rawRefreshToken);
+        AppUser user = appUserRepository.findById(rotation.userId())
+            .orElseThrow(() -> new BadRequestException("User account not found"));
+        String accessToken = jwtTokenService.generateToken(new AppUserPrincipal(user));
+        log.info("event=token_refreshed userId={}", user.getId());
+        return buildAuthResponse(user, accessToken, rotation.rawToken());
+    }
+
+    public void logout(String rawRefreshToken) {
+        refreshTokenService.revoke(rawRefreshToken);
+    }
+
+    private AuthResponse issueTokens(AppUser user, AppUserPrincipal principal) {
+        String accessToken = jwtTokenService.generateToken(principal);
+        String refreshToken = refreshTokenService.issue(user.getId());
+        return buildAuthResponse(user, accessToken, refreshToken);
     }
 
     @Transactional
@@ -109,9 +144,10 @@ public class AuthService {
         return response;
     }
 
-    private AuthResponse buildAuthResponse(AppUser user, String token) {
+    private AuthResponse buildAuthResponse(AppUser user, String accessToken, String refreshToken) {
         AuthResponse response = new AuthResponse();
-        response.setAccessToken(token);
+        response.setAccessToken(accessToken);
+        response.setRefreshToken(refreshToken);
         response.setExpiresInSeconds(jwtTokenService.getTokenTtlSeconds());
         response.setUser(UserMapper.toResponse(user));
         response.setDefaultChannel(channelService.getDefaultChannelResponse(user.getId()));

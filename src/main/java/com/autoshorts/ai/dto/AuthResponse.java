@@ -4,6 +4,7 @@ public class AuthResponse {
 
     private String tokenType = "Bearer";
     private String accessToken;
+    private String refreshToken;
     private long expiresInSeconds;
     private UserProfileResponse user;
     private ChannelResponse defaultChannel;
@@ -14,6 +15,14 @@ public class AuthResponse {
 
     public void setTokenType(String tokenType) {
         this.tokenType = tokenType;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 
     public String getAccessToken() {

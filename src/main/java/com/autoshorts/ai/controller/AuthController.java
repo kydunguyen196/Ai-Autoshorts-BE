@@ -3,8 +3,10 @@ package com.autoshorts.ai.controller;
 import com.autoshorts.ai.dto.AuthResponse;
 import com.autoshorts.ai.dto.CurrentUserResponse;
 import com.autoshorts.ai.dto.LoginRequest;
+import com.autoshorts.ai.dto.RefreshTokenRequest;
 import com.autoshorts.ai.dto.RegisterRequest;
 import com.autoshorts.ai.service.AuthService;
+import org.springframework.http.HttpStatus;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -33,6 +35,17 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request.getRefreshToken());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @GetMapping("/me")

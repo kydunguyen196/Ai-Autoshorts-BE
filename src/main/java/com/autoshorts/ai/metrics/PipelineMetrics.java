@@ -40,6 +40,11 @@ public class PipelineMetrics {
         registry.counter(QUEUE_COUNTER, "result", result).increment();
     }
 
+    /** Records a message that exhausted retries and was dead-lettered. */
+    public void recordDeadLettered() {
+        registry.counter(QUEUE_COUNTER, "result", "dead_lettered").increment();
+    }
+
     private String safe(GenerationStep step) {
         return step == null ? "none" : step.name();
     }

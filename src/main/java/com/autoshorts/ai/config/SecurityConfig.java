@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.HEAD, "/api/media/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/integrations/tiktok/callback").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/notifications/stream").permitAll()
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/billing/webhook", "/api/health", "/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/api/auth/logout", "/api/billing/webhook", "/api/health", "/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

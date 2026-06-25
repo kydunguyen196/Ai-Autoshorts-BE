@@ -33,6 +33,7 @@ public class HuggingFaceVisualGenerationClient implements VisualGenerationClient
         this.webClientBuilder = webClientBuilder;
     }
 
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "ai-providers")
     @Override
     public GeneratedVisualImage generateSceneImage(String prompt, int sceneIndex) {
         if (!appProperties.getVisual().isEnabled()) {

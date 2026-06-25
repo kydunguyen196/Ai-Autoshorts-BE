@@ -61,6 +61,9 @@ class QueueExecutionIT extends IntegrationTestBase {
     @Autowired
     private VideoJobRecoveryService videoJobRecoveryService;
 
+    @Autowired
+    private io.micrometer.core.instrument.MeterRegistry meterRegistry;
+
     @SpyBean
     private VideoJobQueuePublisher queuePublisherSpy;
 
@@ -193,6 +196,7 @@ class QueueExecutionIT extends IntegrationTestBase {
 
     @Test
     void shouldRouteToDeadLetterQueueAfterMaxMessageAttempts() {
+        double baseline = deadLetteredCount();
         UUID unknownJobId = UUID.randomUUID();
         rabbitTemplate.convertAndSend(
             appProperties.getQueue().getExchange(),
@@ -200,12 +204,19 @@ class QueueExecutionIT extends IntegrationTestBase {
             new VideoGenerationJobMessage(unknownJobId, "integration_dlq_probe", Instant.now())
         );
 
+        // After exhausting retries the message is dead-lettered and drained by VideoJobDeadLetterConsumer,
+        // which increments the dead_lettered metric. (The DLQ itself no longer accumulates messages.)
         Awaitility.await()
             .atMost(20, TimeUnit.SECONDS)
             .pollInterval(250, TimeUnit.MILLISECONDS)
-            .until(() -> queueMessageCount(appProperties.getQueue().getDeadLetterQueue()) >= 1L);
+            .until(() -> deadLetteredCount() >= baseline + 1.0);
 
-        assertThat(queueMessageCount(appProperties.getQueue().getDeadLetterQueue())).isGreaterThanOrEqualTo(1L);
+        assertThat(deadLetteredCount()).isGreaterThanOrEqualTo(baseline + 1.0);
+    }
+
+    private double deadLetteredCount() {
+        var counter = meterRegistry.find("autoshorts.queue.consumed").tag("result", "dead_lettered").counter();
+        return counter == null ? 0.0 : counter.count();
     }
 
     @Test

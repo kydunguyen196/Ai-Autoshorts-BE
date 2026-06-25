@@ -35,6 +35,12 @@ public class AppUser {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "lockout_until")
+    private Instant lockoutUntil;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -107,6 +113,22 @@ public class AppUser {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    public void setFailedLoginAttempts(int failedLoginAttempts) {
+        this.failedLoginAttempts = failedLoginAttempts;
+    }
+
+    public Instant getLockoutUntil() {
+        return lockoutUntil;
+    }
+
+    public void setLockoutUntil(Instant lockoutUntil) {
+        this.lockoutUntil = lockoutUntil;
     }
 
     public Instant getCreatedAt() {

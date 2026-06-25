@@ -33,6 +33,7 @@ public class HuggingFaceElevenLabsClient implements ElevenLabsClient {
         this.webClientBuilder = webClientBuilder;
     }
 
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "ai-providers")
     @Override
     public SynthesizedAudio synthesizeSpeech(String text, String requestedVoiceId, int durationSeconds) {
         if (!appProperties.getElevenlabs().isEnabled()) {

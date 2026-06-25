@@ -47,6 +47,25 @@ management:
       export:
         enabled: ${MANAGEMENT_PROMETHEUS_ENABLED:true}
 
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 8
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+    instances:
+      ai-providers:
+        base-config: default
+      tiktok:
+        base-config: default
+      stripe:
+        base-config: default
+
 sentry:
   dsn: ${SENTRY_DSN:}
   environment: ${SENTRY_ENVIRONMENT:${SPRING_PROFILES_ACTIVE:local}}
@@ -208,5 +227,8 @@ app:
       max-age-seconds: ${APP_WEB_CORS_MAX_AGE_SECONDS:3600}
   security:
     jwt-secret: ${APP_JWT_SECRET:replace-this-with-a-long-jwt-secret-for-local-dev}
-    token-ttl-seconds: ${APP_JWT_TOKEN_TTL_SECONDS:86400}
+    token-ttl-seconds: ${APP_JWT_TOKEN_TTL_SECONDS:900}
+    refresh-token-ttl-seconds: ${APP_JWT_REFRESH_TOKEN_TTL_SECONDS:2592000}
+    lockout-threshold: ${APP_AUTH_LOCKOUT_THRESHOLD:5}
+    lockout-minutes: ${APP_AUTH_LOCKOUT_MINUTES:15}
     token-encryption-key: ${APP_TOKEN_ENCRYPTION_KEY:}

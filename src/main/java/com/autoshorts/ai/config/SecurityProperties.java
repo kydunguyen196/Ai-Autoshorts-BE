@@ -13,7 +13,19 @@ public class SecurityProperties {
     private String jwtSecret;
 
     @Min(300)
-    private long tokenTtlSeconds = 86_400;
+    private long tokenTtlSeconds = 900;
+
+    /** Lifetime of a rotating refresh token (default 30 days). */
+    @Min(3600)
+    private long refreshTokenTtlSeconds = 2_592_000;
+
+    /** Failed-login attempts before an account is temporarily locked. */
+    @Min(1)
+    private int lockoutThreshold = 5;
+
+    /** How long an account stays locked after hitting the threshold (minutes). */
+    @Min(1)
+    private long lockoutMinutes = 15;
 
     /**
      * Base64-encoded AES key (16/24/32 bytes) used to encrypt third-party OAuth tokens at rest.
@@ -35,6 +47,30 @@ public class SecurityProperties {
 
     public void setTokenTtlSeconds(long tokenTtlSeconds) {
         this.tokenTtlSeconds = tokenTtlSeconds;
+    }
+
+    public long getRefreshTokenTtlSeconds() {
+        return refreshTokenTtlSeconds;
+    }
+
+    public void setRefreshTokenTtlSeconds(long refreshTokenTtlSeconds) {
+        this.refreshTokenTtlSeconds = refreshTokenTtlSeconds;
+    }
+
+    public int getLockoutThreshold() {
+        return lockoutThreshold;
+    }
+
+    public void setLockoutThreshold(int lockoutThreshold) {
+        this.lockoutThreshold = lockoutThreshold;
+    }
+
+    public long getLockoutMinutes() {
+        return lockoutMinutes;
+    }
+
+    public void setLockoutMinutes(long lockoutMinutes) {
+        this.lockoutMinutes = lockoutMinutes;
     }
 
     public String getTokenEncryptionKey() {

@@ -33,6 +33,7 @@ public class HuggingFaceOpenAiClient implements OpenAiClient {
         this.webClientBuilder = webClientBuilder;
     }
 
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "ai-providers")
     @Override
     public OpenAiGenerationResult generateShortVideoScript(String topic, String style, int durationSeconds) {
         return generateFromPrompts(
@@ -56,6 +57,7 @@ public class HuggingFaceOpenAiClient implements OpenAiClient {
         );
     }
 
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "ai-providers")
     @Override
     public OpenAiGenerationResult generateFromPrompts(String systemPrompt, String userPrompt) {
         String model = resolveModel();
