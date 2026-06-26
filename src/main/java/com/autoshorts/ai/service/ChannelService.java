@@ -58,6 +58,20 @@ public class ChannelService {
     }
 
     @Transactional
+    public ChannelResponse updateBrandKit(UUID userId, UUID channelId, com.autoshorts.ai.dto.BrandKitRequest request) {
+        Channel channel = channelRepository.findByIdAndUserId(channelId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Channel not found: " + channelId));
+        channel.setBrandLogoUrl(trimToNull(request.getBrandLogoUrl()));
+        channel.setBrandPrimaryColor(trimToNull(request.getBrandPrimaryColor()));
+        channel.setBrandAccentColor(trimToNull(request.getBrandAccentColor()));
+        channel.setBrandIntroUrl(trimToNull(request.getBrandIntroUrl()));
+        channel.setBrandOutroUrl(trimToNull(request.getBrandOutroUrl()));
+        Channel saved = channelRepository.save(channel);
+        log.info("event=channel_brand_kit_updated userId={} channelId={}", userId, channelId);
+        return ChannelMapper.toResponse(saved);
+    }
+
+    @Transactional
     public Channel ensureDefaultChannel(UUID userId) {
         return channelRepository.findFirstByUserIdAndIsDefaultTrue(userId)
             .orElseGet(() -> {

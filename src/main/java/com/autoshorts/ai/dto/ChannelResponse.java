@@ -9,6 +9,11 @@ public class ChannelResponse {
     private String name;
     private String description;
     private Boolean isDefault;
+    private String brandLogoUrl;
+    private String brandPrimaryColor;
+    private String brandAccentColor;
+    private String brandIntroUrl;
+    private String brandOutroUrl;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -42,6 +47,46 @@ public class ChannelResponse {
 
     public void setIsDefault(Boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    public String getBrandLogoUrl() {
+        return brandLogoUrl;
+    }
+
+    public void setBrandLogoUrl(String brandLogoUrl) {
+        this.brandLogoUrl = brandLogoUrl;
+    }
+
+    public String getBrandPrimaryColor() {
+        return brandPrimaryColor;
+    }
+
+    public void setBrandPrimaryColor(String brandPrimaryColor) {
+        this.brandPrimaryColor = brandPrimaryColor;
+    }
+
+    public String getBrandAccentColor() {
+        return brandAccentColor;
+    }
+
+    public void setBrandAccentColor(String brandAccentColor) {
+        this.brandAccentColor = brandAccentColor;
+    }
+
+    public String getBrandIntroUrl() {
+        return brandIntroUrl;
+    }
+
+    public void setBrandIntroUrl(String brandIntroUrl) {
+        this.brandIntroUrl = brandIntroUrl;
+    }
+
+    public String getBrandOutroUrl() {
+        return brandOutroUrl;
+    }
+
+    public void setBrandOutroUrl(String brandOutroUrl) {
+        this.brandOutroUrl = brandOutroUrl;
     }
 
     public Instant getCreatedAt() {

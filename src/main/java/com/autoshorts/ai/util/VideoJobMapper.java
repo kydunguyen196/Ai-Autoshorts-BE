@@ -25,6 +25,8 @@ public final class VideoJobMapper {
         response.setHookText(job.getHookText());
         response.setCtaText(job.getCtaText());
         response.setCaptionText(job.getCaptionText());
+        response.setReviewBeforeRender(Boolean.TRUE.equals(job.getReviewBeforeRender()));
+        response.setTemplateId(job.getTemplateId());
         response.setHashtags(parseHashtags(job.getHashtags()));
         response.setSceneBreakdownJson(job.getSceneBreakdownJson());
         response.setSceneAssetsJson(job.getSceneAssetsJson());

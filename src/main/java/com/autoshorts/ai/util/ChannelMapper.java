@@ -14,6 +14,11 @@ public final class ChannelMapper {
         response.setName(channel.getName());
         response.setDescription(channel.getDescription());
         response.setIsDefault(channel.getIsDefault());
+        response.setBrandLogoUrl(channel.getBrandLogoUrl());
+        response.setBrandPrimaryColor(channel.getBrandPrimaryColor());
+        response.setBrandAccentColor(channel.getBrandAccentColor());
+        response.setBrandIntroUrl(channel.getBrandIntroUrl());
+        response.setBrandOutroUrl(channel.getBrandOutroUrl());
         response.setCreatedAt(channel.getCreatedAt());
         response.setUpdatedAt(channel.getUpdatedAt());
         return response;

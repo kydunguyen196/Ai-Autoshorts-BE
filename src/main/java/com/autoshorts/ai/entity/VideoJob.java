@@ -176,6 +176,15 @@ public class VideoJob {
     @Column(name = "auto_publish", nullable = false)
     private Boolean autoPublish = false;
 
+    @Column(name = "review_before_render", nullable = false)
+    private Boolean reviewBeforeRender = false;
+
+    @Column(name = "render_approved", nullable = false)
+    private Boolean renderApproved = false;
+
+    @Column(name = "template_id")
+    private UUID templateId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "publish_status", length = 32, nullable = false)
     private PublishStatus publishStatus = PublishStatus.NOT_PUBLISHED;
@@ -748,6 +757,30 @@ public class VideoJob {
 
     public void setAutoPublish(Boolean autoPublish) {
         this.autoPublish = autoPublish;
+    }
+
+    public Boolean getReviewBeforeRender() {
+        return reviewBeforeRender;
+    }
+
+    public void setReviewBeforeRender(Boolean reviewBeforeRender) {
+        this.reviewBeforeRender = reviewBeforeRender;
+    }
+
+    public Boolean getRenderApproved() {
+        return renderApproved;
+    }
+
+    public void setRenderApproved(Boolean renderApproved) {
+        this.renderApproved = renderApproved;
+    }
+
+    public UUID getTemplateId() {
+        return templateId;
+    }
+
+    public void setTemplateId(UUID templateId) {
+        this.templateId = templateId;
     }
 
     public PublishStatus getPublishStatus() {

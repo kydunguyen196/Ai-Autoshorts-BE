@@ -78,12 +78,22 @@ public class GenerateVideoRequest {
     /** Internal: set by automation (e.g. news ingestion) to auto-publish on completion. */
     private boolean autoPublish = false;
 
+    private boolean reviewBeforeRender = false;
+
     public boolean isAutoPublish() {
         return autoPublish;
     }
 
     public void setAutoPublish(boolean autoPublish) {
         this.autoPublish = autoPublish;
+    }
+
+    public boolean isReviewBeforeRender() {
+        return reviewBeforeRender;
+    }
+
+    public void setReviewBeforeRender(boolean reviewBeforeRender) {
+        this.reviewBeforeRender = reviewBeforeRender;
     }
 
     public String getTopic() {

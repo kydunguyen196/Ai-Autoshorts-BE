@@ -29,6 +29,21 @@ public class Channel {
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault = false;
 
+    @Column(name = "brand_logo_url", columnDefinition = "TEXT")
+    private String brandLogoUrl;
+
+    @Column(name = "brand_primary_color", length = 16)
+    private String brandPrimaryColor;
+
+    @Column(name = "brand_accent_color", length = 16)
+    private String brandAccentColor;
+
+    @Column(name = "brand_intro_url", columnDefinition = "TEXT")
+    private String brandIntroUrl;
+
+    @Column(name = "brand_outro_url", columnDefinition = "TEXT")
+    private String brandOutroUrl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -93,6 +108,46 @@ public class Channel {
 
     public void setIsDefault(Boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    public String getBrandLogoUrl() {
+        return brandLogoUrl;
+    }
+
+    public void setBrandLogoUrl(String brandLogoUrl) {
+        this.brandLogoUrl = brandLogoUrl;
+    }
+
+    public String getBrandPrimaryColor() {
+        return brandPrimaryColor;
+    }
+
+    public void setBrandPrimaryColor(String brandPrimaryColor) {
+        this.brandPrimaryColor = brandPrimaryColor;
+    }
+
+    public String getBrandAccentColor() {
+        return brandAccentColor;
+    }
+
+    public void setBrandAccentColor(String brandAccentColor) {
+        this.brandAccentColor = brandAccentColor;
+    }
+
+    public String getBrandIntroUrl() {
+        return brandIntroUrl;
+    }
+
+    public void setBrandIntroUrl(String brandIntroUrl) {
+        this.brandIntroUrl = brandIntroUrl;
+    }
+
+    public String getBrandOutroUrl() {
+        return brandOutroUrl;
+    }
+
+    public void setBrandOutroUrl(String brandOutroUrl) {
+        this.brandOutroUrl = brandOutroUrl;
     }
 
     public Instant getCreatedAt() {

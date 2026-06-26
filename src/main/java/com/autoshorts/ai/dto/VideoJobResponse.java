@@ -26,6 +26,8 @@ public class VideoJobResponse {
     private String hookText;
     private String ctaText;
     private String captionText;
+    private boolean reviewBeforeRender;
+    private UUID templateId;
     private List<String> hashtags;
     private String sceneBreakdownJson;
     private String sceneAssetsJson;
@@ -206,6 +208,22 @@ public class VideoJobResponse {
 
     public void setCaptionText(String captionText) {
         this.captionText = captionText;
+    }
+
+    public boolean isReviewBeforeRender() {
+        return reviewBeforeRender;
+    }
+
+    public void setReviewBeforeRender(boolean reviewBeforeRender) {
+        this.reviewBeforeRender = reviewBeforeRender;
+    }
+
+    public UUID getTemplateId() {
+        return templateId;
+    }
+
+    public void setTemplateId(UUID templateId) {
+        this.templateId = templateId;
     }
 
     public List<String> getHashtags() {

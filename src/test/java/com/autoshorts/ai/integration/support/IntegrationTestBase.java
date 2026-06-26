@@ -42,6 +42,7 @@ import java.net.URI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -284,6 +285,22 @@ public abstract class IntegrationTestBase {
 
     protected JsonNode postJson(String uri, Object body, String bearerToken, int expectedStatus) throws Exception {
         var requestBuilder = post(uri)
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsBytes(body));
+
+        if (bearerToken != null) {
+            requestBuilder.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
+        }
+
+        MvcResult result = mockMvc.perform(requestBuilder)
+            .andExpect(status().is(expectedStatus))
+            .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    protected JsonNode patchJson(String uri, Object body, String bearerToken, int expectedStatus) throws Exception {
+        var requestBuilder = patch(uri)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsBytes(body));

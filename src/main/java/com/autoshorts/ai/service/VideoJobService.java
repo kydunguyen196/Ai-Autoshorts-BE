@@ -161,6 +161,8 @@ public class VideoJobService {
             job.setRejectionReason(null);
             job.setSelectedForPublish(false);
             job.setAutoPublish(request.isAutoPublish());
+            job.setReviewBeforeRender(request.isReviewBeforeRender());
+            job.setRenderApproved(false);
             job.setPublishStatus(PublishStatus.NOT_PUBLISHED);
 
             VideoJob saved = videoJobRepository.save(job);
@@ -508,6 +510,7 @@ public class VideoJobService {
         job.setReviewedAt(null);
         job.setReviewedBy(null);
         job.setRejectionReason(null);
+        job.setRenderApproved(false);
         job.setSelectedForPublish(false);
         job.setPublishStatus(PublishStatus.NOT_PUBLISHED);
         job.setScheduledPublishAt(null);
@@ -585,6 +588,85 @@ public class VideoJobService {
             job.setCompletedAt(Instant.now());
         });
         log.info("event=job_completed_persisted jobId={} finalVideoUrl={}", jobId, finalVideoUrl);
+        return saved;
+    }
+
+    /** Phase 5: pause a review-before-render job after content generation for user editing. */
+    @Transactional
+    public VideoJob markAwaitingReview(UUID jobId) {
+        VideoJob saved = updateJob(jobId, job -> {
+            if (job.getStatus() != JobStatus.PROCESSING) {
+                throw new InvalidJobStateException("Job cannot await review from state: " + job.getStatus());
+            }
+            job.setStatus(JobStatus.AWAITING_REVIEW);
+            job.setCurrentStep(GenerationStep.CONTENT_PREPARATION);
+            job.setReviewStatus(ReviewStatus.DRAFT);
+            job.setErrorMessage(null);
+            job.setStepErrorDetails(null);
+        });
+        log.info("event=job_awaiting_review_persisted jobId={}", jobId);
+        return saved;
+    }
+
+    /** Edit the draft script/caption/voice while a job is AWAITING_REVIEW. */
+    @Transactional
+    public VideoJob updateDraftForUser(
+        UUID jobId,
+        UUID userId,
+        String scriptText,
+        String captionText,
+        String hookText,
+        String ctaText,
+        String voiceId,
+        UUID templateId
+    ) {
+        VideoJob job = getEntityForUserUpdateOrThrow(jobId, userId);
+        if (job.getStatus() != JobStatus.AWAITING_REVIEW) {
+            throw new InvalidJobStateException("Only AWAITING_REVIEW jobs can be edited. Current state: " + job.getStatus());
+        }
+        if (StringUtils.hasText(scriptText)) {
+            job.setScriptText(scriptText.trim());
+        }
+        if (captionText != null) {
+            job.setCaptionText(trimToNull(captionText));
+        }
+        if (hookText != null) {
+            job.setHookText(trimToNull(hookText));
+        }
+        if (ctaText != null) {
+            job.setCtaText(trimToNull(ctaText));
+        }
+        if (voiceId != null) {
+            job.setVoiceId(trimToNull(voiceId));
+        }
+        if (templateId != null) {
+            job.setTemplateId(templateId);
+        }
+        VideoJob saved = saveAndCache(job);
+        log.info("event=job_draft_updated jobId={} userId={}", jobId, userId);
+        return saved;
+    }
+
+    /**
+     * Approve a draft for rendering: flips the job back to PENDING with renderApproved=true so the
+     * consumer re-runs only the render pipeline (content is skipped). Returns the job for re-dispatch.
+     */
+    @Transactional
+    public VideoJob prepareFinalizeForUser(UUID jobId, UUID userId) {
+        VideoJob job = getEntityForUserUpdateOrThrow(jobId, userId);
+        if (job.getStatus() != JobStatus.AWAITING_REVIEW) {
+            throw new InvalidJobStateException("Only AWAITING_REVIEW jobs can be finalized. Current state: " + job.getStatus());
+        }
+        if (!StringUtils.hasText(job.getScriptText())) {
+            throw new InvalidJobStateException("Cannot finalize a draft without a script");
+        }
+        job.setRenderApproved(true);
+        job.setStatus(JobStatus.PENDING);
+        job.setCurrentStep(GenerationStep.QUEUED);
+        job.setErrorMessage(null);
+        job.setStepErrorDetails(null);
+        VideoJob saved = saveAndCache(job);
+        log.info("event=job_finalize_prepared jobId={} userId={}", jobId, userId);
         return saved;
     }
 

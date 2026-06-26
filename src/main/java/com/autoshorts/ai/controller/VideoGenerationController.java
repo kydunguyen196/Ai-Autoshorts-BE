@@ -7,9 +7,11 @@ import com.autoshorts.ai.dto.GenerateVideoRequest;
 import com.autoshorts.ai.dto.PagedResponse;
 import com.autoshorts.ai.dto.PublishVideoRequest;
 import com.autoshorts.ai.dto.RejectVideoRequest;
+import com.autoshorts.ai.dto.UpdateDraftRequest;
 import com.autoshorts.ai.dto.VideoJobResponse;
 import com.autoshorts.ai.dto.VideoPublishStatusResponse;
 import com.autoshorts.ai.entity.JobStatus;
+import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.entity.WebhookEventType;
 import com.autoshorts.ai.service.BatchVideoGenerationService;
 import com.autoshorts.ai.service.BillingService;
@@ -27,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -182,6 +185,37 @@ public class VideoGenerationController {
             jobId,
             "api_retry",
             "Retry dispatch failed before queue publish"
+        );
+        return ResponseEntity.accepted().body(response);
+    }
+
+    @PatchMapping("/{jobId}/draft")
+    public ResponseEntity<VideoJobResponse> updateDraft(
+        @PathVariable UUID jobId,
+        @Valid @RequestBody UpdateDraftRequest request
+    ) {
+        UUID userId = currentUserService.requireCurrentUserId();
+        VideoJob updated = videoJobService.updateDraftForUser(
+            jobId,
+            userId,
+            request.getScriptText(),
+            request.getCaptionText(),
+            request.getHookText(),
+            request.getCtaText(),
+            request.getVoiceId(),
+            request.getTemplateId()
+        );
+        return ResponseEntity.ok(VideoJobMapper.toResponse(updated));
+    }
+
+    @PostMapping("/{jobId}/finalize")
+    public ResponseEntity<VideoJobResponse> finalizeDraft(@PathVariable UUID jobId) {
+        UUID userId = currentUserService.requireCurrentUserId();
+        VideoJobResponse response = VideoJobMapper.toResponse(videoJobService.prepareFinalizeForUser(jobId, userId));
+        videoJobDispatchService.publishOrMarkFailed(
+            jobId,
+            "api_finalize",
+            "Finalize dispatch failed before queue publish"
         );
         return ResponseEntity.accepted().body(response);
     }

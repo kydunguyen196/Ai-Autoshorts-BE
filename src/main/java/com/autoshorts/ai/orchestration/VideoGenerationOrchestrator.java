@@ -93,7 +93,8 @@ public class VideoGenerationOrchestrator {
     public void processJob(UUID jobId) {
         Path jobDir = null;
         boolean success = false;
-        GenerationStep currentStep = GenerationStep.QUEUED;
+        // Mutable holder so failures inside runRenderPipeline still report the exact failed step.
+        final GenerationStep[] stepRef = { GenerationStep.QUEUED };
         log.info("event=job_processing_requested jobId={}", jobId);
         try {
             videoJobService.startProcessing(jobId);
@@ -107,12 +108,133 @@ public class VideoGenerationOrchestrator {
             jobDir = workingDirectoryManager.createJobDirectory(jobId);
             final Path activeJobDir = jobDir;
 
-            currentStep = GenerationStep.CONTENT_PREPARATION;
-            GeneratedContent generatedContent = runStep(
-                jobId,
-                currentStep,
-                () -> contentGenerationService.generateForJob(job)
-            );
+            // Two-phase pipeline (Phase 5): when reviewBeforeRender is set, the first pass stops
+            // after content generation at AWAITING_REVIEW for the user to edit; the finalize pass
+            // (renderApproved=true) skips content and renders the (possibly edited) script.
+            boolean finalizing = Boolean.TRUE.equals(job.getRenderApproved());
+
+            String script;
+            if (finalizing) {
+                script = job.getScriptText();
+                log.info("event=job_finalize_resume jobId={}", jobId);
+            } else {
+                stepRef[0] = GenerationStep.CONTENT_PREPARATION;
+                GeneratedContent generatedContent = runStep(
+                    jobId,
+                    stepRef[0],
+                    () -> contentGenerationService.generateForJob(job)
+                );
+                persistGeneratedContent(jobId, job, generatedContent);
+                script = generatedContent.scriptText();
+
+                if (Boolean.TRUE.equals(job.getReviewBeforeRender())) {
+                    VideoJob awaiting = videoJobService.markAwaitingReview(jobId);
+                    emitWebhookSafely(WebhookEventType.JOB_GENERATED, awaiting);
+                    notifySafely(
+                        awaiting.getUserId(),
+                        NotificationType.JOB_COMPLETED,
+                        "Bản nháp sẵn sàng để duyệt",
+                        "Kịch bản cho \"" + awaiting.getTopic() + "\" đã tạo xong. Hãy duyệt/chỉnh sửa rồi hoàn tất để dựng video.",
+                        jobId
+                    );
+                    log.info("event=job_awaiting_review jobId={}", jobId);
+                    success = true;
+                    pipelineMetrics.recordJobOutcome("awaiting_review", null);
+                    return;
+                }
+            }
+
+            runRenderPipeline(jobId, job, script, activeJobDir, stepRef);
+            success = true;
+            pipelineMetrics.recordJobOutcome("completed", null);
+        } catch (Exception ex) {
+            GenerationStep currentStep = stepRef[0];
+            pipelineMetrics.recordJobOutcome("failed", currentStep);
+            io.sentry.Sentry.captureException(ex);
+            log.error("event=job_failed jobId={} step={} message={}", jobId, currentStep, ex.getMessage(), ex);
+            String userFacingMessage = buildUserFacingErrorMessage(currentStep, ex);
+            String stepDetails = buildStepErrorDetails(currentStep, userFacingMessage, ex);
+            try {
+                VideoJob failedJob = videoJobService.markFailed(jobId, currentStep, truncate(userFacingMessage, 500), truncate(stepDetails, 8000));
+                emitWebhookSafely(WebhookEventType.JOB_FAILED, failedJob);
+                notifySafely(
+                    failedJob.getUserId(),
+                    NotificationType.JOB_FAILED,
+                    "Tạo video thất bại",
+                    "Video cho chủ đề \"" + failedJob.getTopic() + "\" thất bại: " + truncate(userFacingMessage, 200),
+                    jobId
+                );
+            } catch (Exception markFailedEx) {
+                log.error("event=job_mark_failed_error jobId={} message={}", jobId, markFailedEx.getMessage(), markFailedEx);
+            }
+        } finally {
+            workingDirectoryManager.cleanupJobDirectory(jobDir, !success);
+        }
+    }
+
+    /** Render pipeline: audio → subtitles → visuals → composition → COMPLETED. */
+    private void runRenderPipeline(UUID jobId, VideoJob job, String script, Path activeJobDir, GenerationStep[] stepRef)
+        throws Exception {
+        stepRef[0] = GenerationStep.AUDIO_SYNTHESIS;
+        AudioArtifact audioArtifact = runStep(jobId, stepRef[0], () -> synthesizeAndUploadAudio(job, script, activeJobDir));
+        int effectiveDurationSeconds = resolveEffectiveDurationSeconds(audioArtifact.audioPath(), job.getDurationSeconds());
+        videoJobService.updateJob(jobId, current -> {
+            current.setAudioUrl(audioArtifact.audioUrl());
+            current.setAudioGenerationMode(audioArtifact.mode());
+            current.setAudioProvider(audioArtifact.provider());
+        });
+
+        stepRef[0] = GenerationStep.SUBTITLE_GENERATION;
+        SubtitleArtifact subtitleArtifact = runStep(
+            jobId,
+            stepRef[0],
+            () -> generateAndUploadSubtitles(job, script, activeJobDir, effectiveDurationSeconds)
+        );
+        videoJobService.updateJob(jobId, current -> current.setSubtitleUrl(subtitleArtifact.subtitleUrl()));
+
+        stepRef[0] = GenerationStep.VISUAL_ASSET_GENERATION;
+        VisualAssetGenerationService.GeneratedVisualAssets visualAssets = runStep(
+            jobId,
+            stepRef[0],
+            () -> visualAssetGenerationService.generateAndUploadSceneAssets(job, activeJobDir, effectiveDurationSeconds)
+        );
+        videoJobService.updateJob(jobId, current -> {
+            current.setSceneAssetsJson(visualAssets.sceneAssetsJson());
+            current.setVisualGenerationMode(visualAssets.mode());
+            current.setVisualProvider(visualAssets.provider());
+            current.setVisualModelId(visualAssets.modelId());
+            current.setVisualFailureReason(visualAssets.failureReason());
+            current.setVisualFailureDetails(visualAssets.failureDetails());
+        });
+
+        stepRef[0] = GenerationStep.VIDEO_COMPOSITION;
+        String finalVideoUrl = runStep(
+            jobId,
+            stepRef[0],
+            () -> composeAndUploadVideo(
+                job,
+                audioArtifact.audioPath(),
+                subtitleArtifact.subtitlePath(),
+                visualAssets.sceneSegments(),
+                activeJobDir,
+                effectiveDurationSeconds
+            )
+        );
+        VideoJob completedJob = videoJobService.markCompleted(jobId, finalVideoUrl);
+        emitWebhookSafely(WebhookEventType.JOB_GENERATED, completedJob);
+        emitWebhookSafely(WebhookEventType.JOB_COMPLETED, completedJob);
+        notifySafely(
+            completedJob.getUserId(),
+            NotificationType.JOB_COMPLETED,
+            "Video đã sẵn sàng",
+            "Video cho chủ đề \"" + completedJob.getTopic() + "\" đã tạo xong.",
+            jobId
+        );
+        autoPublishIfRequested(completedJob);
+        log.info("event=job_completed jobId={} finalVideoUrl={}", jobId, finalVideoUrl);
+    }
+
+    private void persistGeneratedContent(UUID jobId, VideoJob job, GeneratedContent generatedContent) {
             videoJobService.updateJob(jobId, current -> {
                 current.setResolvedStyle(generatedContent.resolvedStyle());
                 current.setPromptTemplateId(generatedContent.promptTemplateId());
@@ -149,90 +271,6 @@ public class VideoGenerationOrchestrator {
             if (job.getGenerationGroupId() != null) {
                 videoJobService.recomputeRankingForGroup(job.getUserId(), job.getGenerationGroupId());
             }
-            String script = generatedContent.scriptText();
-
-            currentStep = GenerationStep.AUDIO_SYNTHESIS;
-            AudioArtifact audioArtifact = runStep(jobId, currentStep, () -> synthesizeAndUploadAudio(job, script, activeJobDir));
-            int effectiveDurationSeconds = resolveEffectiveDurationSeconds(audioArtifact.audioPath(), job.getDurationSeconds());
-            videoJobService.updateJob(jobId, current -> {
-                current.setAudioUrl(audioArtifact.audioUrl());
-                current.setAudioGenerationMode(audioArtifact.mode());
-                current.setAudioProvider(audioArtifact.provider());
-            });
-
-            currentStep = GenerationStep.SUBTITLE_GENERATION;
-            SubtitleArtifact subtitleArtifact = runStep(
-                jobId,
-                currentStep,
-                () -> generateAndUploadSubtitles(job, script, activeJobDir, effectiveDurationSeconds)
-            );
-            videoJobService.updateJob(jobId, current -> current.setSubtitleUrl(subtitleArtifact.subtitleUrl()));
-
-            currentStep = GenerationStep.VISUAL_ASSET_GENERATION;
-            VisualAssetGenerationService.GeneratedVisualAssets visualAssets = runStep(
-                jobId,
-                currentStep,
-                () -> visualAssetGenerationService.generateAndUploadSceneAssets(job, activeJobDir, effectiveDurationSeconds)
-            );
-            videoJobService.updateJob(jobId, current -> {
-                current.setSceneAssetsJson(visualAssets.sceneAssetsJson());
-                current.setVisualGenerationMode(visualAssets.mode());
-                current.setVisualProvider(visualAssets.provider());
-                current.setVisualModelId(visualAssets.modelId());
-                current.setVisualFailureReason(visualAssets.failureReason());
-                current.setVisualFailureDetails(visualAssets.failureDetails());
-            });
-
-            currentStep = GenerationStep.VIDEO_COMPOSITION;
-            String finalVideoUrl = runStep(
-                jobId,
-                currentStep,
-                () -> composeAndUploadVideo(
-                    job,
-                    audioArtifact.audioPath(),
-                    subtitleArtifact.subtitlePath(),
-                    visualAssets.sceneSegments(),
-                    activeJobDir,
-                    effectiveDurationSeconds
-                )
-            );
-            VideoJob completedJob = videoJobService.markCompleted(jobId, finalVideoUrl);
-            emitWebhookSafely(WebhookEventType.JOB_GENERATED, completedJob);
-            emitWebhookSafely(WebhookEventType.JOB_COMPLETED, completedJob);
-            notifySafely(
-                completedJob.getUserId(),
-                NotificationType.JOB_COMPLETED,
-                "Video đã sẵn sàng",
-                "Video cho chủ đề \"" + completedJob.getTopic() + "\" đã tạo xong.",
-                jobId
-            );
-            autoPublishIfRequested(completedJob);
-
-            log.info("event=job_completed jobId={} finalVideoUrl={}", jobId, finalVideoUrl);
-            success = true;
-            pipelineMetrics.recordJobOutcome("completed", null);
-        } catch (Exception ex) {
-            pipelineMetrics.recordJobOutcome("failed", currentStep);
-            io.sentry.Sentry.captureException(ex);
-            log.error("event=job_failed jobId={} step={} message={}", jobId, currentStep, ex.getMessage(), ex);
-            String userFacingMessage = buildUserFacingErrorMessage(currentStep, ex);
-            String stepDetails = buildStepErrorDetails(currentStep, userFacingMessage, ex);
-            try {
-                VideoJob failedJob = videoJobService.markFailed(jobId, currentStep, truncate(userFacingMessage, 500), truncate(stepDetails, 8000));
-                emitWebhookSafely(WebhookEventType.JOB_FAILED, failedJob);
-                notifySafely(
-                    failedJob.getUserId(),
-                    NotificationType.JOB_FAILED,
-                    "Tạo video thất bại",
-                    "Video cho chủ đề \"" + failedJob.getTopic() + "\" thất bại: " + truncate(userFacingMessage, 200),
-                    jobId
-                );
-            } catch (Exception markFailedEx) {
-                log.error("event=job_mark_failed_error jobId={} message={}", jobId, markFailedEx.getMessage(), markFailedEx);
-            }
-        } finally {
-            workingDirectoryManager.cleanupJobDirectory(jobDir, !success);
-        }
     }
 
     private AudioArtifact synthesizeAndUploadAudio(VideoJob job, String script, Path jobDir) throws IOException {
