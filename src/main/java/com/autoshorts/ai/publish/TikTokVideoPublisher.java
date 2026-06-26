@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,11 @@ public class TikTokVideoPublisher implements VideoPublisher {
             throw new ExternalServiceException("TikTok publish requires a final video URL");
         }
         if (!appProperties.getTiktok().isDirectPublishEnabled()) {
-            return scaffoldResult(request);
+            // Scaffold mode: a real TikTok connection exists but direct publish is not enabled.
+            // Do NOT fake a successful post — fail clearly so the job is marked PUBLISH_FAILED.
+            throw new ExternalServiceException(
+                "TikTok direct publish is disabled (scaffold mode). "
+                    + "Enable TIKTOK_DIRECT_PUBLISH_ENABLED after the TikTok app audit before publishing.");
         }
         return directPublish(request);
     }
@@ -104,34 +107,6 @@ public class TikTokVideoPublisher implements VideoPublisher {
             return "SELF_ONLY";
         }
         return options.get(0);
-    }
-
-    private PublishResult scaffoldResult(PublishRequest request) {
-        Map<String, Object> requestPayload = new LinkedHashMap<>();
-        requestPayload.put("provider", providerKey());
-        requestPayload.put("platform", request.platform());
-        requestPayload.put("jobId", request.jobId());
-        requestPayload.put("channelId", request.channelId());
-        requestPayload.put("targetAccountId", request.targetAccountId());
-        requestPayload.put("apiBaseUrl", appProperties.getTiktok().getApiBaseUrl());
-        requestPayload.put("note", "Direct publish disabled. Set TIKTOK_DIRECT_PUBLISH_ENABLED=true after TikTok app audit.");
-
-        String externalId = "tiktok-scaffold-" + request.jobId();
-
-        Map<String, Object> responsePayload = new LinkedHashMap<>();
-        responsePayload.put("accepted", true);
-        responsePayload.put("externalId", externalId);
-        responsePayload.put("mode", "SCAFFOLD");
-        responsePayload.put("timestamp", Instant.now());
-
-        return new PublishResult(
-            providerKey(),
-            externalId,
-            "tiktok_scaffold_initialized",
-            toJson(requestPayload),
-            toJson(responsePayload),
-            request.targetAccountId()
-        );
     }
 
     private String toJson(Map<String, Object> payload) {

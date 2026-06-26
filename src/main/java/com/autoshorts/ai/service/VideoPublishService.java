@@ -7,6 +7,7 @@ import com.autoshorts.ai.dto.VideoPublishStatusResponse;
 import com.autoshorts.ai.entity.JobStatus;
 import com.autoshorts.ai.entity.PublishStatus;
 import com.autoshorts.ai.entity.ReviewStatus;
+import com.autoshorts.ai.entity.SocialPlatform;
 import com.autoshorts.ai.entity.TikTokAccountConnection;
 import com.autoshorts.ai.entity.VideoJob;
 import com.autoshorts.ai.entity.WebhookEventType;
@@ -29,6 +30,7 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -42,6 +44,7 @@ public class VideoPublishService {
     private final List<VideoPublisher> publishers;
     private final WebhookDeliveryService webhookDeliveryService;
     private final TikTokConnectionService tikTokConnectionService;
+    private final SocialConnectionService socialConnectionService;
     private final TransactionTemplate transactionTemplate;
 
     public VideoPublishService(
@@ -51,6 +54,7 @@ public class VideoPublishService {
         List<VideoPublisher> publishers,
         WebhookDeliveryService webhookDeliveryService,
         TikTokConnectionService tikTokConnectionService,
+        SocialConnectionService socialConnectionService,
         PlatformTransactionManager transactionManager
     ) {
         this.videoJobRepository = videoJobRepository;
@@ -59,6 +63,7 @@ public class VideoPublishService {
         this.publishers = publishers;
         this.webhookDeliveryService = webhookDeliveryService;
         this.tikTokConnectionService = tikTokConnectionService;
+        this.socialConnectionService = socialConnectionService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
@@ -376,7 +381,9 @@ public class VideoPublishService {
         if (isTikTokPlatform(platform)) {
             return "tiktok";
         }
-        return appProperties.getPublish().getProvider();
+        return SocialPlatform.fromKey(platform)
+            .map(SocialPlatform::key)
+            .orElse(appProperties.getPublish().getProvider());
     }
 
     private String resolvePlatform(String requestedPlatform, String existingPlatform) {
@@ -390,37 +397,55 @@ public class VideoPublishService {
     }
 
     private String resolveTargetAccountId(VideoJob job, UUID userId, String platform) {
-        if (!isTikTokPlatform(platform)) {
-            return null;
+        if (isTikTokPlatform(platform)) {
+            TikTokAccountConnection connection = tikTokConnectionService.findActiveConnection(userId, job.getChannelId())
+                .orElseThrow(() -> new InvalidJobStateException("Active TikTok account connection is required before publishing"));
+            return connection.getPlatformAccountId();
         }
 
-        TikTokAccountConnection connection = tikTokConnectionService.findActiveConnection(userId, job.getChannelId())
-            .orElseThrow(() -> new InvalidJobStateException("Active TikTok account connection is required before publishing"));
-        return connection.getPlatformAccountId();
+        Optional<SocialPlatform> socialPlatform = SocialPlatform.fromKey(platform);
+        if (socialPlatform.isPresent()) {
+            SocialPlatform sp = socialPlatform.get();
+            return socialConnectionService.findActiveConnection(userId, job.getChannelId(), sp)
+                .orElseThrow(() -> new InvalidJobStateException(
+                    "Active " + sp.key() + " account connection is required before publishing"))
+                .getPlatformAccountId();
+        }
+        return null;
     }
 
     private PublishReadiness evaluateReadiness(VideoJob job) {
         String platform = resolvePlatform(null, job.getPublishPlatform());
-        String tiktokConnectionStatus = isTikTokPlatform(platform)
-            ? tikTokConnectionService.describeConnectionState(job.getUserId(), job.getChannelId())
-            : "NOT_REQUIRED";
+        Optional<SocialPlatform> socialPlatform = SocialPlatform.fromKey(platform);
+        String connectionStatus;
+        if (isTikTokPlatform(platform)) {
+            connectionStatus = tikTokConnectionService.describeConnectionState(job.getUserId(), job.getChannelId());
+        } else if (socialPlatform.isPresent()) {
+            connectionStatus = socialConnectionService.describeConnectionState(
+                job.getUserId(), job.getChannelId(), socialPlatform.get());
+        } else {
+            connectionStatus = "NOT_REQUIRED";
+        }
 
         if (job.getStatus() != JobStatus.COMPLETED) {
-            return new PublishReadiness(false, "Job is not completed", tiktokConnectionStatus);
+            return new PublishReadiness(false, "Job is not completed", connectionStatus);
         }
         if (job.getReviewStatus() != ReviewStatus.APPROVED) {
-            return new PublishReadiness(false, "Job is not approved", tiktokConnectionStatus);
+            return new PublishReadiness(false, "Job is not approved", connectionStatus);
         }
         if (!StringUtils.hasText(job.getFinalVideoUrl())) {
-            return new PublishReadiness(false, "Final video URL is missing", tiktokConnectionStatus);
+            return new PublishReadiness(false, "Final video URL is missing", connectionStatus);
         }
         if (requiresPreferredSelection(job) && !Boolean.TRUE.equals(job.getSelectedForPublish())) {
-            return new PublishReadiness(false, "Preferred variant is not selected for publish", tiktokConnectionStatus);
+            return new PublishReadiness(false, "Preferred variant is not selected for publish", connectionStatus);
         }
-        if (isTikTokPlatform(platform) && !"ACTIVE".equalsIgnoreCase(tiktokConnectionStatus)) {
-            return new PublishReadiness(false, "Active TikTok connection is required", tiktokConnectionStatus);
+        if (isTikTokPlatform(platform) && !"ACTIVE".equalsIgnoreCase(connectionStatus)) {
+            return new PublishReadiness(false, "Active TikTok connection is required", connectionStatus);
         }
-        return new PublishReadiness(true, null, tiktokConnectionStatus);
+        if (socialPlatform.isPresent() && !"ACTIVE".equalsIgnoreCase(connectionStatus)) {
+            return new PublishReadiness(false, "Active " + socialPlatform.get().key() + " connection is required", connectionStatus);
+        }
+        return new PublishReadiness(true, null, connectionStatus);
     }
 
     private boolean requiresPreferredSelection(VideoJob job) {

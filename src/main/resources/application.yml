@@ -63,6 +63,8 @@ resilience4j:
         base-config: default
       tiktok:
         base-config: default
+      social-publish:
+        base-config: default
       stripe:
         base-config: default
 
@@ -196,6 +198,30 @@ app:
     status-poll-fixed-delay-ms: ${TIKTOK_STATUS_POLL_FIXED_DELAY_MS:30000}
     status-poll-batch-size: ${TIKTOK_STATUS_POLL_BATCH_SIZE:25}
     status-timeout-minutes: ${TIKTOK_STATUS_TIMEOUT_MINUTES:60}
+  youtube:
+    client-id: ${YOUTUBE_CLIENT_ID:}
+    client-secret: ${YOUTUBE_CLIENT_SECRET:}
+    redirect-uri: ${YOUTUBE_REDIRECT_URI:http://localhost:8080/api/integrations/youtube/callback}
+    scopes: ${YOUTUBE_SCOPES:https://www.googleapis.com/auth/youtube.upload}
+    api-base-url: ${YOUTUBE_API_BASE_URL:https://www.googleapis.com}
+    auth-base-url: ${YOUTUBE_AUTH_BASE_URL:https://accounts.google.com/o/oauth2/v2/auth}
+    frontend-return-url: ${YOUTUBE_FRONTEND_RETURN_URL:http://localhost:3000/app/integrations/youtube}
+    direct-publish-enabled: ${YOUTUBE_DIRECT_PUBLISH_ENABLED:false}
+    status-poll-fixed-delay-ms: ${YOUTUBE_STATUS_POLL_FIXED_DELAY_MS:30000}
+    status-poll-batch-size: ${YOUTUBE_STATUS_POLL_BATCH_SIZE:25}
+    status-timeout-minutes: ${YOUTUBE_STATUS_TIMEOUT_MINUTES:60}
+  instagram:
+    client-id: ${INSTAGRAM_CLIENT_ID:}
+    client-secret: ${INSTAGRAM_CLIENT_SECRET:}
+    redirect-uri: ${INSTAGRAM_REDIRECT_URI:http://localhost:8080/api/integrations/instagram/callback}
+    scopes: ${INSTAGRAM_SCOPES:instagram_basic,instagram_content_publish,pages_show_list}
+    api-base-url: ${INSTAGRAM_API_BASE_URL:https://graph.facebook.com}
+    auth-base-url: ${INSTAGRAM_AUTH_BASE_URL:https://www.facebook.com/dialog/oauth}
+    frontend-return-url: ${INSTAGRAM_FRONTEND_RETURN_URL:http://localhost:3000/app/integrations/instagram}
+    direct-publish-enabled: ${INSTAGRAM_DIRECT_PUBLISH_ENABLED:false}
+    status-poll-fixed-delay-ms: ${INSTAGRAM_STATUS_POLL_FIXED_DELAY_MS:30000}
+    status-poll-batch-size: ${INSTAGRAM_STATUS_POLL_BATCH_SIZE:25}
+    status-timeout-minutes: ${INSTAGRAM_STATUS_TIMEOUT_MINUTES:60}
   webhook:
     enabled: ${APP_WEBHOOK_ENABLED:false}
     endpoint-url: ${APP_WEBHOOK_ENDPOINT_URL:}

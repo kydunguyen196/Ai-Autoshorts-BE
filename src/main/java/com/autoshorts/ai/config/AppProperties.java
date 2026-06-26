@@ -59,6 +59,12 @@ public class AppProperties {
     private TikTok tiktok = new TikTok();
 
     @NotNull
+    private SocialPublish youtube = new SocialPublish("https://www.googleapis.com", "https://accounts.google.com/o/oauth2/v2/auth");
+
+    @NotNull
+    private SocialPublish instagram = new SocialPublish("https://graph.facebook.com", "https://www.facebook.com/dialog/oauth");
+
+    @NotNull
     private Webhook webhook = new Webhook();
 
     @NotNull
@@ -197,6 +203,22 @@ public class AppProperties {
 
     public void setTiktok(TikTok tiktok) {
         this.tiktok = tiktok;
+    }
+
+    public SocialPublish getYoutube() {
+        return youtube;
+    }
+
+    public void setYoutube(SocialPublish youtube) {
+        this.youtube = youtube;
+    }
+
+    public SocialPublish getInstagram() {
+        return instagram;
+    }
+
+    public void setInstagram(SocialPublish instagram) {
+        this.instagram = instagram;
     }
 
     public Webhook getWebhook() {
@@ -1321,6 +1343,129 @@ public class AppProperties {
 
         public void setWebhookVerifyToken(String webhookVerifyToken) {
             this.webhookVerifyToken = webhookVerifyToken;
+        }
+
+        public String getApiBaseUrl() {
+            return apiBaseUrl;
+        }
+
+        public void setApiBaseUrl(String apiBaseUrl) {
+            this.apiBaseUrl = apiBaseUrl;
+        }
+
+        public String getAuthBaseUrl() {
+            return authBaseUrl;
+        }
+
+        public void setAuthBaseUrl(String authBaseUrl) {
+            this.authBaseUrl = authBaseUrl;
+        }
+
+        public String getFrontendReturnUrl() {
+            return frontendReturnUrl;
+        }
+
+        public void setFrontendReturnUrl(String frontendReturnUrl) {
+            this.frontendReturnUrl = frontendReturnUrl;
+        }
+
+        public boolean isDirectPublishEnabled() {
+            return directPublishEnabled;
+        }
+
+        public void setDirectPublishEnabled(boolean directPublishEnabled) {
+            this.directPublishEnabled = directPublishEnabled;
+        }
+
+        public long getStatusPollFixedDelayMs() {
+            return statusPollFixedDelayMs;
+        }
+
+        public void setStatusPollFixedDelayMs(long statusPollFixedDelayMs) {
+            this.statusPollFixedDelayMs = statusPollFixedDelayMs;
+        }
+
+        public int getStatusPollBatchSize() {
+            return statusPollBatchSize;
+        }
+
+        public void setStatusPollBatchSize(int statusPollBatchSize) {
+            this.statusPollBatchSize = statusPollBatchSize;
+        }
+
+        public long getStatusTimeoutMinutes() {
+            return statusTimeoutMinutes;
+        }
+
+        public void setStatusTimeoutMinutes(long statusTimeoutMinutes) {
+            this.statusTimeoutMinutes = statusTimeoutMinutes;
+        }
+    }
+
+    /**
+     * Config shared by the generic social publishers (YouTube / Instagram). Like TikTok, direct
+     * publish is OFF by default ({@code directPublishEnabled=false}) so the pipeline runs in
+     * scaffold mode until real OAuth credentials + app review are in place.
+     */
+    public static class SocialPublish {
+
+        private String clientId;
+        private String clientSecret;
+        private String redirectUri;
+        private String scopes;
+        private String apiBaseUrl;
+        private String authBaseUrl;
+        private String frontendReturnUrl;
+        private boolean directPublishEnabled;
+
+        @Min(1000)
+        private long statusPollFixedDelayMs = 30_000;
+
+        @Min(1)
+        @Max(200)
+        private int statusPollBatchSize = 25;
+
+        @Min(1)
+        private long statusTimeoutMinutes = 60;
+
+        public SocialPublish() {
+        }
+
+        public SocialPublish(String apiBaseUrl, String authBaseUrl) {
+            this.apiBaseUrl = apiBaseUrl;
+            this.authBaseUrl = authBaseUrl;
+        }
+
+        public String getClientId() {
+            return clientId;
+        }
+
+        public void setClientId(String clientId) {
+            this.clientId = clientId;
+        }
+
+        public String getClientSecret() {
+            return clientSecret;
+        }
+
+        public void setClientSecret(String clientSecret) {
+            this.clientSecret = clientSecret;
+        }
+
+        public String getRedirectUri() {
+            return redirectUri;
+        }
+
+        public void setRedirectUri(String redirectUri) {
+            this.redirectUri = redirectUri;
+        }
+
+        public String getScopes() {
+            return scopes;
+        }
+
+        public void setScopes(String scopes) {
+            this.scopes = scopes;
         }
 
         public String getApiBaseUrl() {
