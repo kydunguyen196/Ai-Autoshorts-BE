@@ -97,4 +97,27 @@ public interface VideoJobRepository extends JpaRepository<VideoJob, UUID> {
         @Param("provider") String provider,
         Pageable pageable
     );
+
+    // --- Analytics aggregates (Phase 4). All scoped to a single owner. ---
+
+    @Query("select j.status, count(j) from VideoJob j where j.userId = :userId group by j.status")
+    List<Object[]> countByStatusForUser(@Param("userId") UUID userId);
+
+    @Query("select j.publishStatus, count(j) from VideoJob j where j.userId = :userId group by j.publishStatus")
+    List<Object[]> countByPublishStatusForUser(@Param("userId") UUID userId);
+
+    @Query("select lower(j.publishPlatform), count(j) from VideoJob j "
+        + "where j.userId = :userId and j.publishStatus = :published and j.publishPlatform is not null "
+        + "group by lower(j.publishPlatform)")
+    List<Object[]> countPublishedByPlatformForUser(
+        @Param("userId") UUID userId,
+        @Param("published") PublishStatus published
+    );
+
+    @Query("select coalesce(sum(j.estimatedCostCredits), 0) from VideoJob j where j.userId = :userId")
+    long sumEstimatedCostCreditsForUser(@Param("userId") UUID userId);
+
+    @Query("select j.createdAt, j.estimatedCostCredits, j.status from VideoJob j "
+        + "where j.userId = :userId and j.createdAt >= :since")
+    List<Object[]> findCreatedCostStatusSince(@Param("userId") UUID userId, @Param("since") Instant since);
 }
